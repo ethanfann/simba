@@ -3,43 +3,30 @@ import { readFile, writeFile, mkdir } from "node:fs/promises"
 import { dirname } from "node:path"
 import type { Config, Agent } from "./types"
 
-const DEFAULT_AGENTS: Record<string, Agent> = {
-  claude: {
-    id: "claude",
-    name: "Claude Code",
-    globalPath: "~/.claude/skills",
-    projectPath: ".claude/skills",
-    detected: false,
-  },
-  cursor: {
-    id: "cursor",
-    name: "Cursor",
-    globalPath: "~/.cursor/skills",
-    projectPath: ".cursor/skills",
-    detected: false,
-  },
-  codex: {
-    id: "codex",
-    name: "Codex",
-    globalPath: "~/.codex/skills",
-    projectPath: ".codex/skills",
-    detected: false,
-  },
-  opencode: {
-    id: "opencode",
-    name: "OpenCode",
-    globalPath: "~/.config/opencode/skill",
-    projectPath: ".opencode/skill",
-    detected: false,
-  },
-  antigravity: {
-    id: "antigravity",
-    name: "Antigravity",
-    globalPath: "~/.gemini/antigravity/skills",
-    projectPath: ".agent/skills",
-    detected: false,
-  },
-}
+// Add new agents here: [id, name, globalPath, projectPath]
+const AGENT_DEFINITIONS: [string, string, string, string][] = [
+  ["claude", "Claude Code", "~/.claude/skills", ".claude/skills"],
+  ["cursor", "Cursor", "~/.cursor/skills", ".cursor/skills"],
+  ["codex", "Codex", "~/.codex/skills", ".codex/skills"],
+  ["copilot", "GitHub Copilot", "~/.copilot/skills", ".github/skills"],
+  ["gemini", "Gemini CLI", "~/.gemini/skills", ".gemini/skills"],
+  ["windsurf", "Windsurf", "~/.codeium/windsurf/skills", ".windsurf/skills"],
+  ["amp", "Amp", "~/.config/agents/skills", ".agents/skills"],
+  ["goose", "Goose", "~/.config/goose/skills", ".goose/skills"],
+  ["opencode", "OpenCode", "~/.config/opencode/skill", ".opencode/skill"],
+  ["kilo", "Kilo Code", "~/.kilocode/skills", ".kilocode/skills"],
+  ["roo", "Roo Code", "~/.roo/skills", ".roo/skills"],
+  ["antigravity", "Antigravity", "~/.gemini/antigravity/skills", ".agent/skills"],
+  ["clawdbot", "Clawdbot", "~/.clawdbot/skills", "skills"],
+  ["droid", "Droid", "~/.factory/skills", ".factory/skills"],
+]
+
+const DEFAULT_AGENTS: Record<string, Agent> = Object.fromEntries(
+  AGENT_DEFINITIONS.map(([id, name, globalPath, projectPath]) => [
+    id,
+    { id, name, globalPath, projectPath, detected: false },
+  ])
+)
 
 function createDefaultConfig(): Config {
   return {
