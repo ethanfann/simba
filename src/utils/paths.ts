@@ -20,3 +20,11 @@ export function getConfigPath(): string {
 export function getSnapshotsDir(): string {
   return join(getConfigDir(), "snapshots")
 }
+
+export function getSkillsDir(): string {
+  return join(getConfigDir(), "skills")
+}
+
+export function getRegistryPath(): string {
+  return join(getConfigDir(), "registry.json")
+}
