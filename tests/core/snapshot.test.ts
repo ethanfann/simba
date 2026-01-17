@@ -36,6 +36,8 @@ describe("SnapshotManager", () => {
   test("listSnapshots returns available snapshots", async () => {
     const manager = new SnapshotManager(snapshotsDir, 10)
     await manager.createSnapshot([join(skillsDir, "my-skill")], "test1")
+    // Small delay to ensure different millisecond IDs
+    await new Promise((resolve) => setTimeout(resolve, 10))
     await manager.createSnapshot([join(skillsDir, "my-skill")], "test2")
 
     const list = await manager.listSnapshots()
