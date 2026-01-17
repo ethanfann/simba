@@ -64,7 +64,7 @@ export default defineCommand({
     const conflicts = matrix.filter((m) => m.status === "conflict").length
     const unique = matrix.filter((m) => m.status === "unique").length
 
-    console.log("\n─".repeat(24 + agentNames.length * 9))
+    console.log("\n" + "─".repeat(24 + agentNames.length * 9))
     console.log(`✓ synced: ${synced}  ⚠ conflict: ${conflicts}  ● unique: ${unique}`)
   },
 })
