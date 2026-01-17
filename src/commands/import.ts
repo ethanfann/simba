@@ -2,6 +2,7 @@ import { defineCommand } from "citty"
 import { ConfigStore } from "../core/config-store"
 import { AgentRegistry } from "../core/agent-registry"
 import { getConfigPath } from "../utils/paths"
+import { selectFromList, selectAgent } from "../utils/prompts"
 import { mkdir, access } from "node:fs/promises"
 import { join } from "node:path"
 
@@ -14,7 +15,6 @@ export default defineCommand({
     skill: {
       type: "positional",
       description: "Skill name to import",
-      required: true,
     },
     to: {
       type: "string",
@@ -30,45 +30,42 @@ export default defineCommand({
     const config = await configStore.load()
     const registry = new AgentRegistry(config.agents)
 
-    // Find skill source
-    let sourceAgent: string | null = null
-    let sourcePath: string | null = null
+    let skillName = args.skill
+    let agentId = args.agent
 
-    if (args.agent) {
-      const agent = config.agents[args.agent]
-      if (!agent || !agent.detected) {
-        console.error(`Agent not found or not detected: ${args.agent}`)
-        process.exit(1)
-      }
-
-      const skillPath = registry.getSkillPath(args.skill, args.agent)
-      try {
-        await access(join(skillPath, "SKILL.md"))
-        sourceAgent = args.agent
-        sourcePath = skillPath
-      } catch {
-        console.error(`Skill not found in ${args.agent}: ${args.skill}`)
-        process.exit(1)
-      }
-    } else {
-      // Find first agent with this skill
-      for (const [agentId, agent] of Object.entries(config.agents)) {
-        if (!agent.detected) continue
-
-        const skillPath = registry.getSkillPath(args.skill, agentId)
-        try {
-          await access(join(skillPath, "SKILL.md"))
-          sourceAgent = agentId
-          sourcePath = skillPath
-          break
-        } catch {
-          continue
-        }
-      }
+    // Interactive agent selection if not provided
+    if (!agentId) {
+      agentId = await selectAgent(config.agents, "Select source agent")
     }
 
-    if (!sourceAgent || !sourcePath) {
-      console.error(`Skill not found: ${args.skill}`)
+    const agent = config.agents[agentId]
+    if (!agent || !agent.detected) {
+      console.error(`Agent not found or not detected: ${agentId}`)
+      process.exit(1)
+    }
+
+    // Get available skills from selected agent
+    const availableSkills = await registry.listSkills(agentId)
+
+    if (availableSkills.length === 0) {
+      console.log(`No skills found in ${agent.name}.`)
+      return
+    }
+
+    // Interactive skill selection if not provided
+    if (!skillName) {
+      skillName = await selectFromList(
+        "Select skill to import:",
+        availableSkills.map((s) => ({ value: s.name, label: s.name }))
+      )
+    }
+
+    // Find skill source
+    const sourcePath = registry.getSkillPath(skillName, agentId)
+    try {
+      await access(join(sourcePath, "SKILL.md"))
+    } catch {
+      console.error(`Skill not found in ${agentId}: ${skillName}`)
       process.exit(1)
     }
 
@@ -76,11 +73,10 @@ export default defineCommand({
     let targetPath: string
 
     if (args.to) {
-      targetPath = join(args.to, args.skill)
+      targetPath = join(args.to, skillName)
     } else {
       // Use project path of source agent
-      const agent = config.agents[sourceAgent]
-      targetPath = join(process.cwd(), agent.projectPath, args.skill)
+      targetPath = join(process.cwd(), agent.projectPath, skillName)
     }
 
     // Check if target exists
@@ -96,8 +92,8 @@ export default defineCommand({
     await mkdir(join(targetPath, ".."), { recursive: true })
     await Bun.$`cp -r ${sourcePath} ${targetPath}`
 
-    console.log(`\nImported: ${args.skill}`)
-    console.log(`From: ${config.agents[sourceAgent].name}`)
+    console.log(`\nImported: ${skillName}`)
+    console.log(`From: ${agent.name}`)
     console.log(`To: ${targetPath}`)
   },
 })

@@ -3,6 +3,7 @@ import { ConfigStore } from "../core/config-store"
 import { AgentRegistry } from "../core/agent-registry"
 import { SnapshotManager } from "../core/snapshot"
 import { getConfigPath, getSnapshotsDir } from "../utils/paths"
+import { selectAgent } from "../utils/prompts"
 
 export interface MigrateOptions {
   from: string
@@ -97,14 +98,12 @@ export default defineCommand({
   },
   args: {
     from: {
-      type: "positional",
+      type: "string",
       description: "Source agent",
-      required: true,
     },
     to: {
-      type: "positional",
+      type: "string",
       description: "Target agent",
-      required: true,
     },
     dryRun: {
       type: "boolean",
@@ -114,9 +113,22 @@ export default defineCommand({
     },
   },
   async run({ args }) {
+    const configStore = new ConfigStore(getConfigPath())
+    const config = await configStore.load()
+
+    let from = args.from
+    let to = args.to
+
+    if (!from) {
+      from = await selectAgent(config.agents, "Select source agent")
+    }
+    if (!to) {
+      to = await selectAgent(config.agents, "Select target agent", (a) => a.id !== from)
+    }
+
     await runMigrate({
-      from: args.from,
-      to: args.to,
+      from,
+      to,
       dryRun: args.dryRun,
       configPath: getConfigPath(),
       snapshotsDir: getSnapshotsDir(),

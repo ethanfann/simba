@@ -3,6 +3,7 @@ import { ConfigStore } from "../core/config-store"
 import { AgentRegistry } from "../core/agent-registry"
 import { SnapshotManager } from "../core/snapshot"
 import { getConfigPath, getSnapshotsDir, expandPath } from "../utils/paths"
+import { selectFromList, selectAgent, inputText } from "../utils/prompts"
 import { mkdir, readFile } from "node:fs/promises"
 import { join, dirname } from "node:path"
 import * as tar from "tar"
@@ -16,7 +17,6 @@ export default defineCommand({
     path: {
       type: "positional",
       description: "Backup path (.tar.gz)",
-      required: true,
     },
     to: {
       type: "string",
@@ -37,17 +37,49 @@ export default defineCommand({
     const configStore = new ConfigStore(getConfigPath())
     const config = await configStore.load()
 
+    let snapshotId = args.snapshot
+    let backupPath = args.path
+
+    // Interactive mode if no path or snapshot provided
+    if (!backupPath && !snapshotId) {
+      const mode = await selectFromList("Restore from:", [
+        { value: "snapshot", label: "Snapshot", hint: "restore from auto-saved snapshot" },
+        { value: "backup", label: "Backup file", hint: "restore from .tar.gz archive" },
+      ])
+
+      if (mode === "snapshot") {
+        const snapshots = new SnapshotManager(getSnapshotsDir(), config.snapshots.maxCount)
+        const list = await snapshots.listSnapshots()
+
+        if (list.length === 0) {
+          console.log("No snapshots available.")
+          return
+        }
+
+        snapshotId = await selectFromList(
+          "Select snapshot:",
+          list.map((s) => ({
+            value: s.id,
+            label: s.id,
+            hint: `${s.reason} (${s.skills.length} skills)`,
+          }))
+        )
+      } else {
+        backupPath = await inputText("Backup file path:", { placeholder: "./backup.tar.gz" })
+      }
+    }
+
     // Handle snapshot restore
-    if (args.snapshot) {
+    if (snapshotId) {
       const snapshots = new SnapshotManager(
         getSnapshotsDir(),
         config.snapshots.maxCount
       )
       const list = await snapshots.listSnapshots()
-      const snapshot = list.find((s) => s.id === args.snapshot)
+      const snapshot = list.find((s) => s.id === snapshotId)
 
       if (!snapshot) {
-        console.error(`Snapshot not found: ${args.snapshot}`)
+        console.error(`Snapshot not found: ${snapshotId}`)
         process.exit(1)
       }
 
@@ -69,7 +101,7 @@ export default defineCommand({
       for (const agentId of targetAgents) {
         const agent = config.agents[agentId]
         if (!agent) continue
-        await snapshots.restore(args.snapshot, expandPath(agent.globalPath))
+        await snapshots.restore(snapshotId, expandPath(agent.globalPath))
         console.log(`Restored to ${agent.name}`)
       }
 
@@ -78,12 +110,17 @@ export default defineCommand({
     }
 
     // Handle backup file restore
-    const tempDir = join(dirname(args.path), `.simba-restore-${Date.now()}`)
+    if (!backupPath) {
+      console.error("No backup path provided.")
+      process.exit(1)
+    }
+
+    const tempDir = join(dirname(backupPath), `.simba-restore-${Date.now()}`)
     await mkdir(tempDir, { recursive: true })
 
     // Extract backup
     await tar.extract({
-      file: args.path,
+      file: backupPath,
       cwd: tempDir,
     })
 
@@ -92,7 +129,7 @@ export default defineCommand({
       await readFile(join(tempDir, "manifest.json"), "utf-8")
     )
 
-    console.log(`\nRestoring from backup: ${args.path}`)
+    console.log(`\nRestoring from backup: ${backupPath}`)
     console.log(`Created: ${manifest.created}`)
     console.log(`Skills: ${Object.keys(manifest.skills).length}`)
 

@@ -2,6 +2,7 @@ import { defineCommand } from "citty"
 import { ConfigStore } from "../core/config-store"
 import { AgentRegistry } from "../core/agent-registry"
 import { getConfigPath, expandPath } from "../utils/paths"
+import { inputText } from "../utils/prompts"
 import { mkdir, writeFile, readFile } from "node:fs/promises"
 import { join, dirname } from "node:path"
 import * as tar from "tar"
@@ -15,7 +16,6 @@ export default defineCommand({
     path: {
       type: "positional",
       description: "Output path (.tar.gz)",
-      required: true,
     },
     includeConfig: {
       type: "boolean",
@@ -27,6 +27,16 @@ export default defineCommand({
     const configStore = new ConfigStore(getConfigPath())
     const config = await configStore.load()
     const registry = new AgentRegistry(config.agents)
+
+    // Prompt for path if not provided
+    const defaultPath = `./simba-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`
+    let outputPath = args.path
+    if (!outputPath) {
+      outputPath = await inputText("Output path:", {
+        placeholder: defaultPath,
+        defaultValue: defaultPath,
+      })
+    }
 
     // Collect all unique skills
     const allSkills = new Map<string, { path: string; origin: string }>()
@@ -51,7 +61,7 @@ export default defineCommand({
     }
 
     // Create temp directory for backup structure
-    const tempDir = join(dirname(args.path), `.simba-backup-${Date.now()}`)
+    const tempDir = join(dirname(outputPath), `.simba-backup-${Date.now()}`)
     const skillsDir = join(tempDir, "skills")
     await mkdir(skillsDir, { recursive: true })
 
@@ -95,7 +105,7 @@ export default defineCommand({
     await tar.create(
       {
         gzip: true,
-        file: args.path,
+        file: outputPath,
         cwd: tempDir,
       },
       ["manifest.json", "skills", ...(args.includeConfig ? ["config.toml"] : [])]
@@ -104,7 +114,7 @@ export default defineCommand({
     // Cleanup temp
     await Bun.$`rm -rf ${tempDir}`
 
-    console.log(`\nBackup created: ${args.path}`)
+    console.log(`\nBackup created: ${outputPath}`)
     console.log(`Skills: ${allSkills.size}`)
     console.log(`Config included: ${args.includeConfig}`)
   },
