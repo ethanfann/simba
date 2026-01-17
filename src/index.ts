@@ -19,6 +19,7 @@ const main = defineCommand({
     undo: () => import("./commands/undo").then((m) => m.default),
     snapshots: () => import("./commands/snapshots").then((m) => m.default),
     adopt: () => import("./commands/adopt").then((m) => m.default),
+    doctor: () => import("./commands/doctor").then((m) => m.default),
   },
 })
 
