@@ -20,6 +20,7 @@ const main = defineCommand({
     snapshots: () => import("./commands/snapshots").then((m) => m.default),
     adopt: () => import("./commands/adopt").then((m) => m.default),
     doctor: () => import("./commands/doctor").then((m) => m.default),
+    install: () => import("./commands/install").then((m) => m.default),
   },
 })
 
