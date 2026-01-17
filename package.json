@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/tar": "^6.1.13",
+    "@types/terminal-kit": "^2.5.7",
     "typescript": "^5.0.0"
   },
   "dependencies": {
