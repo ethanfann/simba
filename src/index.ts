@@ -21,6 +21,8 @@ const main = defineCommand({
     adopt: () => import("./commands/adopt").then((m) => m.default),
     doctor: () => import("./commands/doctor").then((m) => m.default),
     install: () => import("./commands/install").then((m) => m.default),
+    assign: () => import("./commands/assign").then((m) => m.default),
+    unassign: () => import("./commands/unassign").then((m) => m.default),
   },
 })
 
