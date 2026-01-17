@@ -46,3 +46,22 @@ export interface SkillMatrix {
   agents: Record<string, { present: boolean; hash: string | null }>
   status: SkillStatus
 }
+
+// Registry types for skill management
+
+export interface SkillAssignment {
+  type: "directory" | "file"
+  target?: string // For file type, which file to symlink (e.g., "rule.mdc")
+}
+
+export interface ManagedSkill {
+  name: string
+  source: string // "adopted:claude", "installed:vercel-labs/agent-skills", etc.
+  installedAt: string // ISO date
+  assignments: Record<string, SkillAssignment> // agentId -> assignment
+}
+
+export interface Registry {
+  version: 1
+  skills: Record<string, ManagedSkill>
+}
