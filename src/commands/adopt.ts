@@ -6,7 +6,7 @@ import { ConfigStore } from "../core/config-store"
 import { RegistryStore } from "../core/registry-store"
 import { SkillsStore } from "../core/skills-store"
 import { AgentRegistry } from "../core/agent-registry"
-import { getConfigPath, getSkillsDir, getRegistryPath } from "../utils/paths"
+import { getConfigPath, getSkillsDir, getRegistryPath, expandPath } from "../utils/paths"
 import { isSymlink, createSymlink } from "../utils/symlinks"
 import type { Agent, ManagedSkill } from "../core/types"
 
@@ -34,12 +34,13 @@ export async function runAdopt(options: AdoptOptions): Promise<void> {
   for (const [agentId, agent] of Object.entries(options.agents)) {
     if (!agent.detected) continue
 
+    const agentPath = expandPath(agent.globalPath)
     try {
-      const entries = await readdir(agent.globalPath, { withFileTypes: true })
+      const entries = await readdir(agentPath, { withFileTypes: true })
       for (const entry of entries) {
         if (!entry.isDirectory()) continue
 
-        const skillPath = join(agent.globalPath, entry.name)
+        const skillPath = join(agentPath, entry.name)
         if (await isSymlink(skillPath)) continue
 
         try {
