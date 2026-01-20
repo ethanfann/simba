@@ -38,6 +38,7 @@ describe("adopt command", () => {
         claude: {
           id: "claude",
           name: "Claude",
+          shortName: "Claude",
           globalPath: claudeDir,
           projectPath: ".claude/skills",
           detected: true,

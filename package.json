@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
+    "@pierre/diffs": "^1.0.6",
     "citty": "^0.1.6",
     "gray-matter": "^4.0.3",
     "simple-git": "^3.30.0",

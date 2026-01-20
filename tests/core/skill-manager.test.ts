@@ -19,6 +19,7 @@ describe("SkillManager", () => {
       agent1: {
         id: "agent1",
         name: "Agent 1",
+        shortName: "Agent1",
         globalPath: join(tempDir, "agent1/skills"),
         projectPath: ".agent1/skills",
         detected: true,
@@ -26,6 +27,7 @@ describe("SkillManager", () => {
       agent2: {
         id: "agent2",
         name: "Agent 2",
+        shortName: "Agent2",
         globalPath: join(tempDir, "agent2/skills"),
         projectPath: ".agent2/skills",
         detected: true,

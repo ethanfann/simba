@@ -36,6 +36,7 @@ describe("status command", () => {
       `[agents.claude]
 id = "claude"
 name = "Claude Code"
+shortName = "Claude"
 globalPath = "~/.claude/skills"
 projectPath = ".claude/skills"
 detected = false
@@ -62,6 +63,7 @@ detected = false
       `[agents.agent1]
 id = "agent1"
 name = "Agent One"
+shortName = "Agent1"
 globalPath = "${join(tempDir, "agent1/skills")}"
 projectPath = ".agent1/skills"
 detected = true
@@ -75,7 +77,7 @@ detected = true
     await statusCommand.run!({ args: {} } as any)
 
     expect(consoleLogs.some((log) => log.includes("Skill"))).toBe(true)
-    expect(consoleLogs.some((log) => log.includes("Agent On"))).toBe(true)
+    expect(consoleLogs.some((log) => log.includes("Agent1"))).toBe(true)
   })
 
   test("displays summary with synced, conflict, and unique counts", async () => {
@@ -91,6 +93,7 @@ detected = true
       `[agents.agent1]
 id = "agent1"
 name = "Agent One"
+shortName = "Agent1"
 globalPath = "${join(tempDir, "agent1/skills")}"
 projectPath = ".agent1/skills"
 detected = true
@@ -119,6 +122,7 @@ detected = true
       `[agents.agent1]
 id = "agent1"
 name = "Agent One"
+shortName = "Agent1"
 globalPath = "${join(tempDir, "agent1/skills")}"
 projectPath = ".agent1/skills"
 detected = true
@@ -126,6 +130,7 @@ detected = true
 [agents.agent2]
 id = "agent2"
 name = "Agent Two"
+shortName = "Agent2"
 globalPath = "${join(tempDir, "agent2/skills")}"
 projectPath = ".agent2/skills"
 detected = true
@@ -137,8 +142,8 @@ detected = true
     const statusCommand = (await import("../../src/commands/status")).default
     await statusCommand.run!({ args: { agent: "agent1" } } as any)
 
-    // Should show Agent One but not Agent Two
-    expect(consoleLogs.some((log) => log.includes("Agent On"))).toBe(true)
-    expect(consoleLogs.some((log) => log.includes("Agent Tw"))).toBe(false)
+    // Should show Agent1 but not Agent2
+    expect(consoleLogs.some((log) => log.includes("Agent1"))).toBe(true)
+    expect(consoleLogs.some((log) => log.includes("Agent2"))).toBe(false)
   })
 })

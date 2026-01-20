@@ -35,7 +35,7 @@ export default defineCommand({
     }
 
     // Print header
-    const agentNames = detectedAgents.map(([_, a]) => a.name.slice(0, 8).padEnd(8))
+    const agentNames = detectedAgents.map(([_, a]) => a.shortName.padEnd(8))
     console.log(`\n${"Skill".padEnd(24)} ${agentNames.join(" ")}`)
     console.log("─".repeat(24 + agentNames.length * 9))
 

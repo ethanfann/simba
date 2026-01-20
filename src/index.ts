@@ -24,12 +24,9 @@ const main = defineCommand({
     status: () => import("./commands/status").then((m) => m.default),
     sync: () => import("./commands/sync").then((m) => m.default),
     unassign: () => import("./commands/unassign").then((m) => m.default),
+    uninstall: () => import("./commands/uninstall").then((m) => m.default),
     undo: () => import("./commands/undo").then((m) => m.default),
-  },
-  async run() {
-    // Default action: open TUI
-    const { runMatrixTUI } = await import("./tui/matrix")
-    await runMatrixTUI()
+    update: () => import("./commands/update").then((m) => m.default),
   },
 })
 

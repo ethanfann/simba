@@ -28,6 +28,7 @@ function createTestConfig(overrides: Partial<{
       claude: {
         id: "claude",
         name: "Claude Code",
+        shortName: "Claude",
         globalPath: claudeSkillsDir,
         projectPath: ".claude/skills",
         detected: claudeDetected,
@@ -35,6 +36,7 @@ function createTestConfig(overrides: Partial<{
       cursor: {
         id: "cursor",
         name: "Cursor",
+        shortName: "Cursor",
         globalPath: cursorSkillsDir,
         projectPath: ".cursor/skills",
         detected: cursorDetected,

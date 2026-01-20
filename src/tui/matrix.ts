@@ -2,6 +2,7 @@ import termkit from "terminal-kit"
 import { RegistryStore } from "../core/registry-store"
 import { SkillsStore } from "../core/skills-store"
 import { ConfigStore } from "../core/config-store"
+import { AgentRegistry } from "../core/agent-registry"
 import { getRegistryPath, getSkillsDir, getConfigPath, expandPath } from "../utils/paths"
 import type { Agent, Registry } from "../core/types"
 
@@ -25,7 +26,10 @@ export async function runMatrixTUI(): Promise<void> {
 
   const skillsStore = new SkillsStore(getSkillsDir(), getRegistryPath())
 
-  const detectedAgents = Object.values(config.agents).filter(a => a.detected)
+  // Run fresh detection instead of relying on stale config
+  const agentRegistry = new AgentRegistry(config.agents)
+  const detected = await agentRegistry.detectAgents()
+  const detectedAgents = Object.values(detected).filter(a => a.detected)
   const skills = Object.keys(registry.skills)
 
   if (skills.length === 0) {

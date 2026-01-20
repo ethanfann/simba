@@ -3,6 +3,29 @@ import { RegistryStore } from "../core/registry-store"
 import { ConfigStore } from "../core/config-store"
 import { getRegistryPath, getConfigPath } from "../utils/paths"
 
+export interface ListOptions {
+  registryPath: string
+  agents: Record<string, { name: string }>
+}
+
+export interface SkillInfo {
+  name: string
+  agentNames: string[]
+}
+
+export async function listSkills(options: ListOptions): Promise<SkillInfo[]> {
+  const registryStore = new RegistryStore(options.registryPath)
+  const registry = await registryStore.load()
+
+  const skills = Object.values(registry.skills)
+
+  return skills.map((skill) => {
+    const assignments = Object.keys(skill.assignments)
+    const agentNames = assignments.map((id) => options.agents[id]?.name || id)
+    return { name: skill.name, agentNames }
+  })
+}
+
 export default defineCommand({
   meta: {
     name: "list",

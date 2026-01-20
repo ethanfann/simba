@@ -40,6 +40,12 @@ export class SkillsStore {
     await cp(sourcePath, destPath, { recursive: true })
   }
 
+  async linkSkill(name: string, sourcePath: string): Promise<void> {
+    await this.ensureDir()
+    const destPath = join(this.skillsDir, name)
+    await createSymlink(sourcePath, destPath)
+  }
+
   async removeSkill(name: string): Promise<void> {
     const skillPath = join(this.skillsDir, name)
     await rm(skillPath, { recursive: true })

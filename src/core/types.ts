@@ -3,6 +3,7 @@
 export interface Agent {
   id: string
   name: string
+  shortName: string // Short display name for matrix views (max 8 chars)
   globalPath: string
   projectPath: string
   detected: boolean
@@ -54,11 +55,18 @@ export interface SkillAssignment {
   target?: string // For file type, which file to symlink (e.g., "rule.mdc")
 }
 
+export interface InstallSource {
+  repo: string // GitHub shorthand "user/repo", full URL, or absolute local path
+  protocol: "https" | "ssh" | "local"
+  skillPath?: string // Path within repo, e.g., "./better-auth/create-auth"
+}
+
 export interface ManagedSkill {
   name: string
   source: string // "adopted:claude", "installed:vercel-labs/agent-skills", etc.
   installedAt: string // ISO date
   assignments: Record<string, SkillAssignment> // agentId -> assignment
+  installSource?: InstallSource // Present for installed skills, powers updates
 }
 
 export interface Registry {
