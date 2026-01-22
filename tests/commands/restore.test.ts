@@ -546,7 +546,7 @@ detected = true
       expect(process.exitCode).toBe(1)
 
       // Reset exit code
-      process.exitCode = originalExitCode
+      process.exitCode = originalExitCode ?? 0
     })
 
     test("snapshot dry run shows what would be restored", async () => {
