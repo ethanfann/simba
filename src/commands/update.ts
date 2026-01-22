@@ -1,9 +1,10 @@
 import { defineCommand } from "citty"
-import { readFile, mkdir, rm } from "node:fs/promises"
-import { join } from "node:path"
+import { readFile, readdir, mkdir, rm } from "node:fs/promises"
+import { join, relative } from "node:path"
 import * as p from "@clack/prompts"
 import simpleGit from "simple-git"
 import { tmpdir } from "node:os"
+import { createHash } from "node:crypto"
 import { RegistryStore } from "../core/registry-store"
 import { SkillsStore } from "../core/skills-store"
 import { getSkillsDir, getRegistryPath } from "../utils/paths"
@@ -11,6 +12,50 @@ import { compareFiles, renderDiff } from "../utils/diff"
 import { discoverSkills } from "./install"
 import type { ManagedSkill, InstallSource } from "../core/types"
 import matter from "gray-matter"
+
+/**
+ * Recursively get all files in a directory (sorted for deterministic hashing)
+ */
+async function getAllFiles(dir: string): Promise<string[]> {
+  const files: string[] = []
+  
+  async function scan(currentDir: string): Promise<void> {
+    const entries = await readdir(currentDir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = join(currentDir, entry.name)
+      if (entry.isDirectory()) {
+        await scan(fullPath)
+      } else {
+        files.push(relative(dir, fullPath))
+      }
+    }
+  }
+  
+  await scan(dir)
+  return files.sort()
+}
+
+/**
+ * Compute a content hash for an entire skill directory.
+ * Hash includes: sorted file paths + their contents
+ */
+async function hashSkillDir(dir: string): Promise<string> {
+  const files = await getAllFiles(dir)
+  const hash = createHash("sha256")
+  
+  for (const file of files) {
+    // Include file path in hash (detects renames/additions/deletions)
+    hash.update(file)
+    hash.update("\0")
+    
+    // Include file content
+    const content = await readFile(join(dir, file))
+    hash.update(content)
+    hash.update("\0")
+  }
+  
+  return hash.digest("hex")
+}
 
 interface SkillUpdate {
   skill: ManagedSkill
@@ -119,16 +164,23 @@ export async function runUpdate(options: UpdateOptions): Promise<void> {
           continue
         }
 
-        const existingPath = join(options.skillsDir, skill.name, "SKILL.md")
-        const existingContent = await readFile(existingPath, "utf-8")
-        const newContent = await readFile(join(remote.path, "SKILL.md"), "utf-8")
+        const localDir = join(options.skillsDir, skill.name)
+        
+        // Hash entire directories to detect any file changes
+        const [localHash, remoteHash] = await Promise.all([
+          hashSkillDir(localDir),
+          hashSkillDir(remote.path)
+        ])
 
-        const comparison = compareFiles(existingContent, newContent, "SKILL.md")
-
-        if (comparison.identical) {
+        if (localHash === remoteHash) {
           console.log(`  ✓ ${skill.name}: up to date`)
         } else {
           console.log(`  ↑ ${skill.name}: update available`)
+          
+          // Still read SKILL.md for version display purposes
+          const existingContent = await readFile(join(localDir, "SKILL.md"), "utf-8")
+          const newContent = await readFile(join(remote.path, "SKILL.md"), "utf-8")
+          
           allUpdates.push({
             skill,
             newPath: remote.path,
