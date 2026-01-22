@@ -29,7 +29,8 @@
     "simba": "./src/index.ts"
   },
   "files": [
-    "src"
+    "src",
+    "!src/**/*.test.ts"
   ],
   "scripts": {
     "dev": "bun run src/index.ts",
