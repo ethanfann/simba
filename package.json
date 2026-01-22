@@ -2,6 +2,9 @@
   "name": "@ethancord/simba",
   "version": "0.1.0",
   "description": "AI skills manager - central store with symlink-based distribution across 14+ coding agents",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "license": "MIT",
   "author": "Ethan Fann",
