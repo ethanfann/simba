@@ -31,7 +31,7 @@
   },
   "files": [
     "src",
-    "!src/**/*.test.ts"
+    "!assets"
   ],
   "scripts": {
     "dev": "bun run src/index.ts",

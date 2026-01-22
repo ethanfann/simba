@@ -39,7 +39,7 @@ describe("list command", () => {
   test("returns empty array when no skills", async () => {
     await createRegistry({})
 
-    const { listSkills } = await import("./list")
+    const { listSkills } = await import("../../src/commands/list")
     const skills = await listSkills({
       registryPath,
       agents: {},
@@ -54,7 +54,7 @@ describe("list command", () => {
       "skill-b": { assignments: {} },
     })
 
-    const { listSkills } = await import("./list")
+    const { listSkills } = await import("../../src/commands/list")
     const skills = await listSkills({
       registryPath,
       agents: {},
@@ -70,7 +70,7 @@ describe("list command", () => {
       "my-skill": { assignments: { claude: { type: "directory" } } },
     })
 
-    const { listSkills } = await import("./list")
+    const { listSkills } = await import("../../src/commands/list")
     const skills = await listSkills({
       registryPath,
       agents: { claude: { name: "Claude Code" } },
@@ -86,7 +86,7 @@ describe("list command", () => {
       "my-skill": { assignments: { unknown: { type: "directory" } } },
     })
 
-    const { listSkills } = await import("./list")
+    const { listSkills } = await import("../../src/commands/list")
     const skills = await listSkills({
       registryPath,
       agents: {},
@@ -105,7 +105,7 @@ describe("list command", () => {
       },
     })
 
-    const { listSkills } = await import("./list")
+    const { listSkills } = await import("../../src/commands/list")
     const skills = await listSkills({
       registryPath,
       agents: {
@@ -122,7 +122,7 @@ describe("list command", () => {
   test("handles non-existent registry gracefully", async () => {
     await rm(testDir, { recursive: true, force: true })
 
-    const { listSkills } = await import("./list")
+    const { listSkills } = await import("../../src/commands/list")
     const skills = await listSkills({
       registryPath: join(testDir, "nonexistent.json"),
       agents: {},

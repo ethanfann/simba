@@ -40,7 +40,7 @@ describe("assign command", () => {
     }
     await writeFile(registryPath, JSON.stringify(registry))
 
-    const { runAssign } = await import("./assign")
+    const { runAssign } = await import("../../src/commands/assign")
     await runAssign({
       skill: "my-skill",
       agents: ["claude"],
@@ -70,7 +70,7 @@ describe("assign command", () => {
     await writeFile(registryPath, JSON.stringify(registry))
 
     // Create symlink first
-    const { runAssign } = await import("./assign")
+    const { runAssign } = await import("../../src/commands/assign")
     await runAssign({
       skill: "my-skill",
       agents: ["claude"],
@@ -79,7 +79,7 @@ describe("assign command", () => {
       agentPaths: { claude: claudeDir }
     })
 
-    const { runUnassign } = await import("./unassign")
+    const { runUnassign } = await import("../../src/commands/unassign")
     await runUnassign({
       skill: "my-skill",
       agents: ["claude"],

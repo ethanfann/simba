@@ -1,25 +1,16 @@
-import { describe, test, expect } from "bun:test"
-import { expandPath, getConfigDir, getConfigPath } from "../../src/utils/paths"
+import { test, expect, describe } from "bun:test"
+import { getSkillsDir, getRegistryPath } from "../../src/utils/paths"
+import { join } from "node:path"
 import { homedir } from "node:os"
 
 describe("paths", () => {
-  test("expandPath expands tilde", () => {
-    const result = expandPath("~/.claude/skills")
-    expect(result).toBe(`${homedir()}/.claude/skills`)
+  test("getSkillsDir returns XDG-compliant path", () => {
+    const expected = join(homedir(), ".config", "simba", "skills")
+    expect(getSkillsDir()).toBe(expected)
   })
 
-  test("expandPath handles absolute paths", () => {
-    const result = expandPath("/absolute/path")
-    expect(result).toBe("/absolute/path")
-  })
-
-  test("getConfigDir returns XDG path", () => {
-    const result = getConfigDir()
-    expect(result).toContain("simba")
-  })
-
-  test("getConfigPath returns config.toml path", () => {
-    const result = getConfigPath()
-    expect(result).toEndWith("config.toml")
+  test("getRegistryPath returns registry.json path", () => {
+    const expected = join(homedir(), ".config", "simba", "registry.json")
+    expect(getRegistryPath()).toBe(expected)
   })
 })

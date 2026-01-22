@@ -2,7 +2,7 @@ import { test, expect, describe, beforeEach, afterEach } from "bun:test"
 import { mkdir, rm, writeFile, readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import type { Registry, ManagedSkill } from "../core/types"
+import type { Registry, ManagedSkill } from "../../src/core/types"
 
 const testDir = join(tmpdir(), "simba-update-test-" + Date.now())
 const skillsDir = join(testDir, "skills")

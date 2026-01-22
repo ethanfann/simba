@@ -46,7 +46,7 @@ describe("uninstall command", () => {
     await createSkill(skillsDir, "my-skill")
     await createRegistry({ "my-skill": { assignments: {} } })
 
-    const { runUninstall } = await import("./uninstall")
+    const { runUninstall } = await import("../../src/commands/uninstall")
     await runUninstall({
       skills: ["my-skill"],
       skillsDir,
@@ -74,7 +74,7 @@ describe("uninstall command", () => {
     await createRegistry({ "my-skill": { assignments: { claude: { type: "directory" } } } })
 
     // Create symlink to simulate assigned skill
-    const { runAssign } = await import("./assign")
+    const { runAssign } = await import("../../src/commands/assign")
     await runAssign({
       skill: "my-skill",
       agents: ["claude"],
@@ -83,7 +83,7 @@ describe("uninstall command", () => {
       agentPaths: { claude: claudeDir },
     })
 
-    const { runUninstall } = await import("./uninstall")
+    const { runUninstall } = await import("../../src/commands/uninstall")
     await runUninstall({
       skills: ["my-skill"],
       skillsDir,
@@ -106,7 +106,7 @@ describe("uninstall command", () => {
     await createSkill(skillsDir, "my-skill")
     await createRegistry({ "my-skill": { assignments: {} } })
 
-    const { runUninstall } = await import("./uninstall")
+    const { runUninstall } = await import("../../src/commands/uninstall")
     await runUninstall({
       skills: ["my-skill"],
       skillsDir,
@@ -127,7 +127,7 @@ describe("uninstall command", () => {
   test("handles non-existent skill gracefully", async () => {
     await createRegistry({})
 
-    const { runUninstall } = await import("./uninstall")
+    const { runUninstall } = await import("../../src/commands/uninstall")
     // Should not throw
     await runUninstall({
       skills: ["non-existent"],
@@ -149,7 +149,7 @@ describe("uninstall command", () => {
       "skill-b": { assignments: {} },
     })
 
-    const { runUninstall } = await import("./uninstall")
+    const { runUninstall } = await import("../../src/commands/uninstall")
     await runUninstall({
       skills: ["skill-a", "skill-b"],
       skillsDir,

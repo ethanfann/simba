@@ -2,7 +2,7 @@ import { test, expect, describe, beforeEach, afterEach } from "bun:test"
 import { mkdir, rm, writeFile, readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import type { Registry } from "../core/types"
+import type { Registry } from "../../src/core/types"
 
 const testDir = join(tmpdir(), "simba-install-test-" + Date.now())
 const skillsDir = join(testDir, "skills")
@@ -47,7 +47,7 @@ describe("install command", () => {
   test("installs skill from local path", async () => {
     await createSourceSkill("cool-skill")
 
-    const { runInstall } = await import("./install")
+    const { runInstall } = await import("../../src/commands/install")
 
     await runInstall({
       source: sourceDir,
@@ -65,7 +65,7 @@ describe("install command", () => {
     await createSourceSkill("skill-a")
     await createSourceSkill("skill-b")
 
-    const { discoverSkills } = await import("./install")
+    const { discoverSkills } = await import("../../src/commands/install")
     const skills = await discoverSkills(sourceDir)
 
     expect(skills.length).toBe(2)
@@ -86,7 +86,7 @@ describe("install command", () => {
       ]
     )
 
-    const { discoverSkills } = await import("./install")
+    const { discoverSkills } = await import("../../src/commands/install")
     const skills = await discoverSkills(sourceDir)
 
     expect(skills.length).toBe(2)
@@ -105,7 +105,7 @@ describe("install command", () => {
       [{ path: "skills/login", name: "login-skill", description: "Login skill" }]
     )
 
-    const { discoverSkills } = await import("./install")
+    const { discoverSkills } = await import("../../src/commands/install")
     const skills = await discoverSkills(sourceDir)
 
     expect(skills.length).toBe(1)
@@ -121,7 +121,7 @@ describe("install command", () => {
       plugins: [{ name: "main", skills: ["./does-not-exist", "./also-missing"] }]
     }))
 
-    const { discoverSkills } = await import("./install")
+    const { discoverSkills } = await import("../../src/commands/install")
     const skills = await discoverSkills(sourceDir)
 
     expect(skills.length).toBe(0)
@@ -140,7 +140,7 @@ describe("install command", () => {
       [{ path: "extra/shared-skill", name: "shared-skill", description: "from marketplace" }]
     )
 
-    const { discoverSkills } = await import("./install")
+    const { discoverSkills } = await import("../../src/commands/install")
     const skills = await discoverSkills(sourceDir)
 
     // Should only have one copy (standard dirs scanned first)
@@ -158,7 +158,7 @@ describe("install command", () => {
       [{ path: "features/cool-feature", name: "cool-feature", description: "A cool feature" }]
     )
 
-    const { runInstall } = await import("./install")
+    const { runInstall } = await import("../../src/commands/install")
 
     await runInstall({
       source: sourceDir,
@@ -190,7 +190,7 @@ describe("install command", () => {
       await writeFile(join(skillDir, "SKILL.md"), `---\nname: ${name}\n---\n# ${name}`)
     }
 
-    const { discoverSkills } = await import("./install")
+    const { discoverSkills } = await import("../../src/commands/install")
     const skills = await discoverSkills(sourceDir)
 
     expect(skills.length).toBe(2)
@@ -201,7 +201,7 @@ describe("install command", () => {
   test("computes relativePath for discovered skills", async () => {
     await createSourceSkill("my-skill")
 
-    const { discoverSkills } = await import("./install")
+    const { discoverSkills } = await import("../../src/commands/install")
     const skills = await discoverSkills(sourceDir)
 
     expect(skills.length).toBe(1)
@@ -218,7 +218,7 @@ describe("install command", () => {
       [{ path: "features/auth", name: "auth-skill" }]
     )
 
-    const { discoverSkills } = await import("./install")
+    const { discoverSkills } = await import("../../src/commands/install")
     const skills = await discoverSkills(sourceDir)
 
     expect(skills.length).toBe(1)
@@ -242,7 +242,7 @@ describe("installSource tracking", () => {
     await mkdir(skillDir, { recursive: true })
     await writeFile(join(skillDir, "SKILL.md"), "---\nname: local-skill\n---\n# Local")
 
-    const { runInstall } = await import("./install")
+    const { runInstall } = await import("../../src/commands/install")
 
     await runInstall({
       source: sourceDir,
@@ -267,7 +267,7 @@ describe("installSource tracking", () => {
     await mkdir(skillDir, { recursive: true })
     await writeFile(join(skillDir, "SKILL.md"), "---\nname: symlink-skill\n---\n# Symlink")
 
-    const { runInstall } = await import("./install")
+    const { runInstall } = await import("../../src/commands/install")
 
     await runInstall({
       source: sourceDir,

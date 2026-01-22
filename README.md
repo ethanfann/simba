@@ -1,5 +1,9 @@
 # Simba
 
+<p align="center">
+  <img src="assets/simba.jpg" alt="Simba the cat" width="300">
+</p>
+
 [![npm version](https://img.shields.io/npm/v/simba-skills)](https://www.npmjs.com/package/simba-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 

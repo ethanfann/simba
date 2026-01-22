@@ -2,7 +2,7 @@ import { test, expect, describe, beforeEach, afterEach } from "bun:test"
 import { mkdir, rm, writeFile, readlink, lstat } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import { createSymlink, isSymlink, removeSymlink, getSymlinkTarget } from "./symlinks"
+import { createSymlink, isSymlink, removeSymlink, getSymlinkTarget } from "../../src/utils/symlinks"
 
 const testDir = join(tmpdir(), "simba-symlink-test-" + Date.now())
 

@@ -41,7 +41,7 @@ describe("doctor command", () => {
     }
     await writeFile(registryPath, JSON.stringify(registry))
 
-    const { runDoctor } = await import("./doctor")
+    const { runDoctor } = await import("../../src/commands/doctor")
     const results = await runDoctor({
       skillsDir,
       registryPath,
@@ -78,7 +78,7 @@ describe("doctor command", () => {
     }
     await writeFile(registryPath, JSON.stringify(registry))
 
-    const { runDoctor } = await import("./doctor")
+    const { runDoctor } = await import("../../src/commands/doctor")
     const results = await runDoctor({
       skillsDir,
       registryPath,
@@ -114,7 +114,7 @@ describe("doctor command", () => {
     }
     await writeFile(registryPath, JSON.stringify(registry))
 
-    const { runDoctor } = await import("./doctor")
+    const { runDoctor } = await import("../../src/commands/doctor")
     const results = await runDoctor({
       skillsDir,
       registryPath,

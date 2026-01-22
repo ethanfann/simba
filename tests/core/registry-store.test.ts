@@ -2,7 +2,7 @@ import { test, expect, describe, beforeEach, afterEach } from "bun:test"
 import { mkdir, rm, readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import { RegistryStore } from "./registry-store"
+import { RegistryStore } from "../../src/core/registry-store"
 
 const testDir = join(tmpdir(), "simba-registry-test-" + Date.now())
 const registryPath = join(testDir, "registry.json")

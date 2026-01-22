@@ -64,12 +64,12 @@ describe("migrate command", () => {
     // Setup: Create a skill in claude that doesn't exist in cursor
     await createSkill(claudeSkillsDir, "my-skill", "# My Skill")
 
-    const { ConfigStore } = await import("../core/config-store")
+    const { ConfigStore } = await import("../../src/core/config-store")
     const configStore = new ConfigStore(join(configDir, "config.toml"))
     await configStore.save(createTestConfig())
 
     // Import and run the command with test dependencies
-    const { runMigrate } = await import("./migrate")
+    const { runMigrate } = await import("../../src/commands/migrate")
 
     const logs: string[] = []
     const originalLog = console.log
@@ -101,11 +101,11 @@ describe("migrate command", () => {
     await createSkill(claudeSkillsDir, "shared-skill", "# From Claude")
     await createSkill(cursorSkillsDir, "shared-skill", "# From Cursor")
 
-    const { ConfigStore } = await import("../core/config-store")
+    const { ConfigStore } = await import("../../src/core/config-store")
     const configStore = new ConfigStore(join(configDir, "config.toml"))
     await configStore.save(createTestConfig())
 
-    const { runMigrate } = await import("./migrate")
+    const { runMigrate } = await import("../../src/commands/migrate")
 
     const logs: string[] = []
     const originalLog = console.log
@@ -135,11 +135,11 @@ describe("migrate command", () => {
   test("dry run does not copy skills", async () => {
     await createSkill(claudeSkillsDir, "test-skill", "# Test")
 
-    const { ConfigStore } = await import("../core/config-store")
+    const { ConfigStore } = await import("../../src/core/config-store")
     const configStore = new ConfigStore(join(configDir, "config.toml"))
     await configStore.save(createTestConfig())
 
-    const { runMigrate } = await import("./migrate")
+    const { runMigrate } = await import("../../src/commands/migrate")
 
     const logs: string[] = []
     const originalLog = console.log
@@ -166,11 +166,11 @@ describe("migrate command", () => {
   })
 
   test("errors on unknown source agent", async () => {
-    const { ConfigStore } = await import("../core/config-store")
+    const { ConfigStore } = await import("../../src/core/config-store")
     const configStore = new ConfigStore(join(configDir, "config.toml"))
     await configStore.save(createTestConfig())
 
-    const { runMigrate } = await import("./migrate")
+    const { runMigrate } = await import("../../src/commands/migrate")
 
     const errors: string[] = []
     const originalError = console.error
@@ -204,11 +204,11 @@ describe("migrate command", () => {
   })
 
   test("errors on undetected agent", async () => {
-    const { ConfigStore } = await import("../core/config-store")
+    const { ConfigStore } = await import("../../src/core/config-store")
     const configStore = new ConfigStore(join(configDir, "config.toml"))
     await configStore.save(createTestConfig({ cursorDetected: false }))
 
-    const { runMigrate } = await import("./migrate")
+    const { runMigrate } = await import("../../src/commands/migrate")
 
     const errors: string[] = []
     const originalError = console.error
@@ -244,11 +244,11 @@ describe("migrate command", () => {
   test("creates snapshot when autoSnapshot is enabled", async () => {
     await createSkill(claudeSkillsDir, "snapshot-skill", "# Snapshot Test")
 
-    const { ConfigStore } = await import("../core/config-store")
+    const { ConfigStore } = await import("../../src/core/config-store")
     const configStore = new ConfigStore(join(configDir, "config.toml"))
     await configStore.save(createTestConfig({ autoSnapshot: true }))
 
-    const { runMigrate } = await import("./migrate")
+    const { runMigrate } = await import("../../src/commands/migrate")
 
     const logs: string[] = []
     const originalLog = console.log

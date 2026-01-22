@@ -2,7 +2,7 @@ import { test, expect, describe, beforeEach, afterEach } from "bun:test"
 import { mkdir, rm, writeFile, readdir, readlink, lstat } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
-import { SkillsStore } from "./skills-store"
+import { SkillsStore } from "../../src/core/skills-store"
 
 const testDir = join(tmpdir(), "simba-skills-store-test-" + Date.now())
 const skillsDir = join(testDir, "skills")

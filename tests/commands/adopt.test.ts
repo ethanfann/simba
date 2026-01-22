@@ -28,7 +28,7 @@ describe("adopt command", () => {
   test("adopts skills from agent into store", async () => {
     await createSkill(claudeDir, "my-skill", "# My Skill")
 
-    const { runAdopt } = await import("./adopt")
+    const { runAdopt } = await import("../../src/commands/adopt")
 
     await runAdopt({
       skillsDir,
