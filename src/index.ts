@@ -1,12 +1,17 @@
 #!/usr/bin/env bun
 
-import { defineCommand, runMain } from "citty"
+import { defineCommand, runMain, showUsage } from "citty"
 
 const main = defineCommand({
   meta: {
     name: "simba",
     version: "0.2.0",
     description: "AI skills manager",
+  },
+  async run({ cmd, rawArgs }) {
+    if (rawArgs.length === 0) {
+      await showUsage(cmd)
+    }
   },
   subCommands: {
     adopt: () => import("./commands/adopt").then((m) => m.default),

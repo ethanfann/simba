@@ -1,5 +1,5 @@
 import { defineCommand } from "citty"
-import { access } from "node:fs/promises"
+import { access, rm } from "node:fs/promises"
 import { join } from "node:path"
 import * as p from "@clack/prompts"
 import { ConfigStore } from "../core/config-store"
@@ -162,6 +162,17 @@ export default defineCommand({
       await removeSymlink(broken.path)
       await createSymlink(expectedTarget, broken.path)
       console.log(`Fixed: ${broken.skill} (${broken.agent})`)
+    }
+
+    for (const rogue of results.rogue) {
+      const agent = detected[rogue.agent]
+      if (!agent) continue
+
+      // Delete rogue directory/file and replace with symlink
+      await rm(rogue.path, { recursive: true })
+      const expectedTarget = join(getSkillsDir(), rogue.skill)
+      await createSymlink(expectedTarget, rogue.path)
+      console.log(`Fixed rogue: ${rogue.skill} (${rogue.agent})`)
     }
 
     console.log("\nRepairs complete!")

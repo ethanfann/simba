@@ -70,9 +70,12 @@ export async function runAdopt(options: AdoptOptions): Promise<void> {
   }
 
   const toAdopt: Array<{ name: string; skill: DiscoveredSkill }> = []
+  const toTakeover: Array<{ name: string; skills: DiscoveredSkill[] }> = []
+  
   for (const [name, skills] of byName) {
     if (await skillsStore.hasSkill(name)) {
-      console.log(`  Skipping ${name} (already in store)`)
+      // Already in store - take over rogue copies
+      toTakeover.push({ name, skills })
       continue
     }
 
@@ -86,12 +89,14 @@ export async function runAdopt(options: AdoptOptions): Promise<void> {
     }
   }
 
-  if (toAdopt.length === 0) {
+  if (toAdopt.length === 0 && toTakeover.length === 0) {
     console.log("\nNo new skills to adopt.")
     return
   }
 
-  console.log(`\nAdopting ${toAdopt.length} skills...`)
+  if (toAdopt.length > 0) {
+    console.log(`\nAdopting ${toAdopt.length} skills...`)
+  }
 
   if (options.dryRun) {
     for (const { name, skill } of toAdopt) {
@@ -115,6 +120,33 @@ export async function runAdopt(options: AdoptOptions): Promise<void> {
     registry.skills[name] = managedSkill
 
     console.log(`  Adopted: ${name} (from ${skill.agentId})`)
+  }
+
+  // Take over rogue copies (skill already in store, but real dirs exist at agents)
+  if (toTakeover.length > 0) {
+    console.log(`\nTaking over ${toTakeover.length} rogue skills...`)
+    
+    if (!options.dryRun) {
+      for (const { name, skills } of toTakeover) {
+        for (const skill of skills) {
+          await rm(skill.path, { recursive: true })
+          await createSymlink(join(options.skillsDir, name), skill.path)
+          
+          // Update registry assignment
+          if (!registry.skills[name].assignments[skill.agentId]) {
+            registry.skills[name].assignments[skill.agentId] = { type: "directory" }
+          }
+          
+          console.log(`  Replaced: ${name} (${skill.agentId})`)
+        }
+      }
+    } else {
+      for (const { name, skills } of toTakeover) {
+        for (const skill of skills) {
+          console.log(`  Would replace: ${name} (${skill.agentId})`)
+        }
+      }
+    }
   }
 
   await registryStore.save(registry)

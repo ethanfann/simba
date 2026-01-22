@@ -6,8 +6,7 @@ import { AgentRegistry } from "../core/agent-registry"
 import { getRegistryPath, getSkillsDir, getConfigPath, expandPath } from "../utils/paths"
 import type { Agent, Registry } from "../core/types"
 
-// Cast to any to access showCursor (missing from @types/terminal-kit)
-const term = termkit.terminal as typeof termkit.terminal & { showCursor: () => void }
+const term = termkit.terminal
 
 interface MatrixState {
   skills: string[]
@@ -102,7 +101,7 @@ export async function runMatrixTUI(): Promise<void> {
 
     term("\n")
     term("─".repeat(21 + state.agents.length * 10) + "\n")
-    term.dim("[Space] Toggle  [a] Assign all  [n] None  [q] Quit\n")
+    term.dim("[Space] Toggle  [a] Assign all  [n] None  [Enter] Confirm  [q] Cancel\n")
   }
 
   const toggle = async () => {
@@ -110,29 +109,43 @@ export async function runMatrixTUI(): Promise<void> {
     const agent = state.agents[state.cursorCol]
     const skill = state.registry.skills[skillName]
 
-    if (skill.assignments[agent.id]) {
-      await skillsStore.unassignSkill(skillName, expandPath(agent.globalPath))
-      delete skill.assignments[agent.id]
-    } else {
-      await skillsStore.assignSkill(skillName, expandPath(agent.globalPath), { type: "directory" })
-      skill.assignments[agent.id] = { type: "directory" }
+    try {
+      if (skill.assignments[agent.id]) {
+        await skillsStore.unassignSkill(skillName, expandPath(agent.globalPath))
+        delete skill.assignments[agent.id]
+      } else {
+        await skillsStore.assignSkill(skillName, expandPath(agent.globalPath), { type: "directory" })
+        skill.assignments[agent.id] = { type: "directory" }
+      }
+      await registryStore.save(state.registry)
+    } catch (err) {
+      term.moveTo(1, state.skills.length + 8)
+      term.yellow(`Error: ${(err as Error).message}\n`)
     }
-
-    await registryStore.save(state.registry)
   }
 
   const assignAll = async () => {
     const skillName = state.skills[state.cursorRow]
     const skill = state.registry.skills[skillName]
+    const errors: string[] = []
 
     for (const agent of state.agents) {
       if (!skill.assignments[agent.id]) {
-        await skillsStore.assignSkill(skillName, expandPath(agent.globalPath), { type: "directory" })
-        skill.assignments[agent.id] = { type: "directory" }
+        try {
+          await skillsStore.assignSkill(skillName, expandPath(agent.globalPath), { type: "directory" })
+          skill.assignments[agent.id] = { type: "directory" }
+        } catch (err) {
+          errors.push(`${agent.name}: ${(err as Error).message}`)
+        }
       }
     }
 
     await registryStore.save(state.registry)
+    
+    if (errors.length > 0) {
+      term.moveTo(1, state.skills.length + 8)
+      term.yellow(`Errors:\n${errors.join("\n")}\n`)
+    }
   }
 
   const unassignAll = async () => {
@@ -176,11 +189,18 @@ export async function runMatrixTUI(): Promise<void> {
       case "n":
         await unassignAll()
         break
+      case "ENTER":
+        term.clear()
+        term.hideCursor(false)
+        term.grabInput(false)
+        term.green("Changes saved.\n")
+        process.exit(0)
       case "q":
       case "CTRL_C":
         term.clear()
-        term.showCursor()
+        term.hideCursor(false)
         term.grabInput(false)
+        term.yellow("Cancelled.\n")
         process.exit(0)
     }
 
