@@ -1,6 +1,6 @@
 {
   "name": "simba-skills",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "AI skills manager - central store with symlink-based distribution across 14+ coding agents",
   "publishConfig": {
     "access": "public"
