@@ -1,6 +1,6 @@
 # Simba
 
-[![npm version](https://img.shields.io/npm/v/@ethancord/simba)](https://www.npmjs.com/package/@ethancord/simba)
+[![npm version](https://img.shields.io/npm/v/simba-skills)](https://www.npmjs.com/package/simba-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 AI skills manager with a central store and symlink-based distribution across 14+ coding agents.
@@ -19,13 +19,13 @@ Most skill installers are one-shot: they clone a repo and copy files. Simba is a
 
 ```bash
 # Requires Bun runtime
-bunx @ethancord/simba detect
+bunx simba-skills detect
 ```
 
 Or install globally:
 
 ```bash
-bun install -g @ethancord/simba
+bun install -g simba-skills
 ```
 
 ## Quick Start
