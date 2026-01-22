@@ -1,15 +1,31 @@
 # Simba
 
-Sync AI coding assistant skills across Claude Code and Cursor.
+[![npm version](https://img.shields.io/npm/v/@ethancord/simba)](https://www.npmjs.com/package/@ethancord/simba)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Overview
+AI skills manager with a central store and symlink-based distribution across 14+ coding agents.
 
-Simba keeps your custom skills in sync between different AI coding assistants. When you create a skill in Claude Code, Simba can automatically propagate it to Cursor (and vice versa), ensuring your workflows stay consistent regardless of which assistant you're using.
+## Why Simba?
+
+Most skill installers are one-shot: they clone a repo and copy files. Simba is a **skill lifecycle manager**:
+
+- **Central store** → One source of truth at `~/.config/simba/skills/`
+- **Registry tracking** → Records install sources, enabling one-command updates
+- **Symlink distribution** → No file duplication; changes propagate instantly
+- **Multi-agent sync** → Keep Claude, Cursor, Copilot, and others in sync
+- **Rollback support** → Automatic snapshots before destructive operations
 
 ## Installation
 
 ```bash
-bun install
+# Requires Bun runtime
+bunx @ethancord/simba detect
+```
+
+Or install globally:
+
+```bash
+bun install -g @ethancord/simba
 ```
 
 ## Quick Start
@@ -18,103 +34,78 @@ bun install
 # Detect installed agents
 simba detect
 
-# View skill status across agents
+# Adopt existing skills into the central store
+simba adopt
+
+# Install skills from GitHub
+simba install vercel-labs/agent-skills
+
+# Assign skills to specific agents
+simba assign my-skill claude,cursor
+
+# Check for updates (uses tracked install sources)
+simba update
+
+# View skill matrix across all agents
 simba status
-
-# Sync all skills (union merge)
-simba sync
 ```
 
-## Commands
+## Key Features
 
-### `detect`
-
-Scan for installed agents and their skills.
+### Install & Update
 
 ```bash
-simba detect
-simba detect --refresh  # Force rescan
+# Install from GitHub (HTTPS)
+simba install user/repo
+
+# Install from private repos (SSH)
+simba install user/repo --ssh
+
+# Install from local path (creates symlinks, auto-syncs)
+simba install ~/my-skills
+
+# Update all installed skills from their sources
+simba update
 ```
 
-### `status`
+Simba records the source repository and path during installation, enabling `simba update` to fetch and compare changes with diffs.
 
-Display a matrix of skills across all detected agents.
+### Assign & Manage
 
 ```bash
-simba status
-simba status --agent claude  # Filter to specific agent
+# Assign skill to multiple agents
+simba assign my-skill claude,cursor,copilot
+
+# Interactive TUI for bulk management
+simba manage
+
+# Remove skill from agents
+simba unassign my-skill claude
 ```
 
-### `sync`
-
-Synchronize skills across agents using union merge (skills present in one agent are copied to others).
+### Health & Recovery
 
 ```bash
-simba sync
-simba sync --dry-run          # Preview changes
-simba sync --source claude    # Use Claude as source of truth for conflicts
-```
+# Check symlink integrity
+simba doctor
 
-### `migrate`
+# Auto-repair broken symlinks
+simba doctor --fix
 
-One-way copy of skills from one agent to another.
+# Backup all skills
+simba backup ./skills.tar.gz --includeConfig
 
-```bash
-simba migrate --from claude --to cursor
-simba migrate --from claude --to cursor --dry-run
-```
+# Restore from backup
+simba restore ./skills.tar.gz
 
-### `backup`
-
-Export all skills to a portable archive.
-
-```bash
-simba backup ./my-skills.tar.gz
-simba backup ./my-skills.tar.gz --includeConfig
-```
-
-### `restore`
-
-Restore skills from a backup archive or snapshot.
-
-```bash
-simba restore ./my-skills.tar.gz
-simba restore ./my-skills.tar.gz --to cursor  # Restore to specific agent
-simba restore --snapshot <id>                  # Restore from snapshot
-simba restore --dry-run                        # Preview changes
-```
-
-### `import`
-
-Copy a global skill into the current project for local customization.
-
-```bash
-simba import my-skill
-simba import my-skill --to ./custom/path
-simba import my-skill --agent cursor  # Import from specific agent
-```
-
-### `snapshots`
-
-List available snapshots (automatically created before destructive operations).
-
-```bash
-simba snapshots
-```
-
-### `undo`
-
-Restore from the most recent snapshot.
-
-```bash
+# Undo last operation
 simba undo
-simba undo --dry-run
 ```
 
 ## Supported Agents
 
-| Agent | Global Skills Path | Project Skills Path |
-|-------|-------------------|---------------------|
+| Agent | Global Path | Project Path |
+|-------|-------------|--------------|
 | Claude Code | `~/.claude/skills` | `.claude/skills` |
 | Cursor | `~/.cursor/skills` | `.cursor/skills` |
 | Codex | `~/.codex/skills` | `.codex/skills` |
@@ -130,21 +121,59 @@ simba undo --dry-run
 | Clawdbot | `~/.clawdbot/skills` | `skills` |
 | Droid | `~/.factory/skills` | `.factory/skills` |
 
-## How It Works
+## Architecture
 
-1. **Detection**: Simba scans for installed agents by checking if their config directories exist
-2. **Hashing**: Each skill is identified by a tree hash of its contents, enabling conflict detection
-3. **Snapshots**: Before any destructive operation, Simba creates a snapshot for easy rollback
-4. **Sync Strategy**: Union merge copies skills that exist in one agent but not others; conflicts (same skill name, different content) require manual resolution or `--source` flag
+```
+~/.config/simba/
+├── config.toml           # Settings
+├── registry.json         # Skill metadata, sources & assignments
+├── skills/               # Central store
+│   └── my-skill/
+│       └── SKILL.md
+└── snapshots/            # Automatic rollback points
+
+~/.claude/skills/
+└── my-skill → ~/.config/simba/skills/my-skill  (symlink)
+
+~/.cursor/skills/
+└── my-skill → ~/.config/simba/skills/my-skill  (symlink)
+```
+
+## All Commands
+
+| Command | Description |
+|---------|-------------|
+| `detect` | Scan for installed agents |
+| `adopt` | Move existing skills into central store |
+| `install` | Install from GitHub or local path |
+| `uninstall` | Remove skill from store and agents |
+| `update` | Check and apply updates from sources |
+| `list` | List managed skills |
+| `status` | Skill matrix across agents |
+| `assign` | Symlink skill to agents |
+| `unassign` | Remove skill from agents |
+| `manage` | Interactive TUI |
+| `sync` | Union merge across agents |
+| `migrate` | Copy all skills from one agent to another |
+| `doctor` | Verify and repair symlinks |
+| `backup` | Export skills to archive |
+| `restore` | Restore from backup |
+| `snapshots` | List rollback points |
+| `undo` | Restore from last snapshot |
+| `import` | Copy global skill to project for customization |
 
 ## Configuration
 
-Config is stored at `~/.config/simba/config.toml`:
+Config at `~/.config/simba/config.toml`:
 
 ```toml
 [snapshots]
 maxCount = 10
 autoSnapshot = true
+
+[sync]
+strategy = "union"  # or "source"
+sourceAgent = ""    # for source strategy
 ```
 
 ## License
