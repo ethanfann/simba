@@ -1,5 +1,5 @@
 {
-  "name": "@ethancord/simba",
+  "name": "simba-skills",
   "version": "0.1.2",
   "description": "AI skills manager - central store with symlink-based distribution across 14+ coding agents",
   "publishConfig": {
