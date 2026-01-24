@@ -13,7 +13,7 @@ const AGENT_DEFINITIONS: [string, string, string, string, string][] = [
     ["windsurf", "Windsurf", "Windsurf", "~/.codeium/windsurf/skills", ".windsurf/skills"],
     ["amp", "Amp", "Amp", "~/.config/agents/skills", ".agents/skills"],
     ["goose", "Goose", "Goose", "~/.config/goose/skills", ".goose/skills"],
-    ["opencode", "OpenCode", "OpenCode", "~/.config/opencode/skill", ".opencode/skill"],
+    ["opencode", "OpenCode", "OpenCode", "~/.config/opencode/skills", ".opencode/skills"],
     ["kilo", "Kilo Code", "Kilo", "~/.kilocode/skills", ".kilocode/skills"],
     ["roo", "Roo Code", "Roo", "~/.roo/skills", ".roo/skills"],
     ["antigravity", "Antigravity", "Antigrav", "~/.gemini/antigravity/skills", ".agent/skills"],
