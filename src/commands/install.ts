@@ -282,6 +282,7 @@ export interface InstallOptions {
   registryPath: string
   useSSH: boolean
   skillName?: string // Install specific skill by name, skip selection
+  installAll?: boolean // Install all discovered skills without prompts
   onSelect: (skills: DiscoveredSkill[]) => Promise<string[]>
 }
 
@@ -349,7 +350,10 @@ export async function runInstall(options: InstallOptions): Promise<void> {
 
     let selected: string[]
 
-    if (options.skillName) {
+    if (options.installAll) {
+      selected = discovered.map(s => s.name)
+      console.log(`Installing all ${selected.length} skills...`)
+    } else if (options.skillName) {
       // Direct install of specific skill
       const skill = discovered.find(s => s.name === options.skillName)
       if (!skill) {
@@ -405,14 +409,16 @@ export async function runInstall(options: InstallOptions): Promise<void> {
           renderDiff(comparison.diff, "current", "new")
         }
 
-        const update = await p.confirm({
-          message: `Update ${name}?`,
-          initialValue: true,
-        })
+        if (!options.installAll) {
+          const update = await p.confirm({
+            message: `Update ${name}?`,
+            initialValue: true,
+          })
 
-        if (p.isCancel(update) || !update) {
-          console.log(`  Skipping ${name}`)
-          continue
+          if (p.isCancel(update) || !update) {
+            console.log(`  Skipping ${name}`)
+            continue
+          }
         }
 
         // Remove old and add new
@@ -474,6 +480,7 @@ export default defineCommand({
     source: { type: "positional", description: "GitHub repo (user/repo) or local path", required: true },
     ssh: { type: "boolean", description: "Use SSH for GitHub repos (for private repos)", default: false },
     skill: { type: "string", description: "Install specific skill by name (skip selection)", required: false },
+    all: { type: "boolean", description: "Install all skills without prompts", default: false },
   },
   async run({ args }) {
     await runInstall({
@@ -482,6 +489,7 @@ export default defineCommand({
       registryPath: getRegistryPath(),
       useSSH: args.ssh,
       skillName: args.skill,
+      installAll: args.all,
       onSelect: async (skills) => {
         const result = await p.multiselect({
           message: "Select skills to install:",

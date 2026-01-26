@@ -226,6 +226,93 @@ describe("install command", () => {
   })
 })
 
+describe("--all flag", () => {
+  beforeEach(async () => {
+    await mkdir(skillsDir, { recursive: true })
+    await mkdir(sourceDir, { recursive: true })
+  })
+
+  afterEach(async () => {
+    await rm(testDir, { recursive: true, force: true })
+  })
+
+  test("installs all discovered skills", async () => {
+    await createSourceSkill("skill-a")
+    await createSourceSkill("skill-b")
+    await createSourceSkill("skill-c")
+
+    const { runInstall } = await import("../../src/commands/install")
+
+    await runInstall({
+      source: sourceDir,
+      skillsDir,
+      registryPath,
+      useSSH: false,
+      installAll: true,
+      onSelect: async () => [],
+    })
+
+    const installed = await readdir(skillsDir)
+    expect(installed).toContain("skill-a")
+    expect(installed).toContain("skill-b")
+    expect(installed).toContain("skill-c")
+  })
+
+  test("bypasses onSelect callback", async () => {
+    await createSourceSkill("skill-a")
+
+    const { runInstall } = await import("../../src/commands/install")
+
+    let onSelectCalled = false
+    await runInstall({
+      source: sourceDir,
+      skillsDir,
+      registryPath,
+      useSSH: false,
+      installAll: true,
+      onSelect: async () => {
+        onSelectCalled = true
+        return []
+      },
+    })
+
+    expect(onSelectCalled).toBe(false)
+  })
+
+  test("auto-confirms updates on existing skills", async () => {
+    // Install initial version
+    await createSourceSkill("update-skill", "---\nname: update-skill\nversion: '1.0'\n---\n# v1")
+
+    const { runInstall } = await import("../../src/commands/install")
+
+    await runInstall({
+      source: sourceDir,
+      skillsDir,
+      registryPath,
+      useSSH: false,
+      installAll: true,
+      onSelect: async () => [],
+    })
+
+    // Modify source to trigger update
+    await createSourceSkill("update-skill", "---\nname: update-skill\nversion: '2.0'\n---\n# v2 changed")
+
+    // Run again with --all - should auto-update without prompts
+    await runInstall({
+      source: sourceDir,
+      skillsDir,
+      registryPath,
+      useSSH: false,
+      installAll: true,
+      onSelect: async () => [],
+    })
+
+    // Verify updated content
+    const content = await readFile(join(skillsDir, "update-skill", "SKILL.md"), "utf-8")
+    expect(content).toContain("v2 changed")
+  })
+})
+
 describe("--skill flag (direct install)", () => {
   beforeEach(async () => {
     await mkdir(skillsDir, { recursive: true })
