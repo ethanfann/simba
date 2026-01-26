@@ -226,6 +226,95 @@ describe("install command", () => {
   })
 })
 
+describe("--skill flag (direct install)", () => {
+  beforeEach(async () => {
+    await mkdir(skillsDir, { recursive: true })
+    await mkdir(sourceDir, { recursive: true })
+  })
+
+  afterEach(async () => {
+    await rm(testDir, { recursive: true, force: true })
+  })
+
+  test("installs specific skill by name", async () => {
+    await createSourceSkill("skill-a")
+    await createSourceSkill("skill-b")
+
+    const { runInstall } = await import("../../src/commands/install")
+
+    let onSelectCalled = false
+    await runInstall({
+      source: sourceDir,
+      skillsDir,
+      registryPath,
+      useSSH: false,
+      skillName: "skill-a",
+      onSelect: async () => {
+        onSelectCalled = true
+        return []
+      },
+    })
+
+    // Should install only skill-a
+    const installed = await readdir(skillsDir)
+    expect(installed).toContain("skill-a")
+    expect(installed).not.toContain("skill-b")
+
+    // onSelect should not be called when skillName is provided
+    expect(onSelectCalled).toBe(false)
+  })
+
+  test("fails gracefully when skill not found", async () => {
+    await createSourceSkill("existing-skill")
+
+    const { runInstall } = await import("../../src/commands/install")
+
+    const logs: string[] = []
+    const originalLog = console.log
+    console.log = (msg: string) => logs.push(msg)
+
+    try {
+      await runInstall({
+        source: sourceDir,
+        skillsDir,
+        registryPath,
+        useSSH: false,
+        skillName: "nonexistent-skill",
+        onSelect: async () => [],
+      })
+    } finally {
+      console.log = originalLog
+    }
+
+    // Should not install anything
+    const installed = await readdir(skillsDir)
+    expect(installed).toHaveLength(0)
+
+    // Should log error with available skills
+    expect(logs.some(l => l.includes("not found"))).toBe(true)
+    expect(logs.some(l => l.includes("existing-skill"))).toBe(true)
+  })
+
+  test("tracks installSource for specific skill", async () => {
+    await createSourceSkill("tracked-skill")
+
+    const { runInstall } = await import("../../src/commands/install")
+
+    await runInstall({
+      source: sourceDir,
+      skillsDir,
+      registryPath,
+      useSSH: false,
+      skillName: "tracked-skill",
+      onSelect: async () => [],
+    })
+
+    const registry: Registry = JSON.parse(await readFile(registryPath, "utf-8"))
+    expect(registry.skills["tracked-skill"]).toBeDefined()
+    expect(registry.skills["tracked-skill"].installSource?.skillPath).toBe("./skills/tracked-skill")
+  })
+})
+
 describe("installSource tracking", () => {
   beforeEach(async () => {
     await mkdir(skillsDir, { recursive: true })
