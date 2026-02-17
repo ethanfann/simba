@@ -76,7 +76,7 @@
         "Adopted skills not found in archive are still warned about",
         "Backup extraction uses same format as simba backup output"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "core-6",
@@ -89,7 +89,7 @@
         "--force removes old skill dir and replaces with fresh fetch",
         "Missing symlinks are recreated in both modes"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "agent-1",

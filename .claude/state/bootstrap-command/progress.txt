@@ -9,6 +9,8 @@ Started: 2026-02-16
 - Positional args use `required: false` when optional
 - State dir lives at `.claude/state/` not `.agents/state/`
 - Use type guard functions (`is` predicates) to narrow optional fields instead of `as Type` assertions
+- `SnapshotManager(getSnapshotsDir(), maxCount)` for pre-destructive snapshots; `createSnapshot([paths], reason)` returns snapshot ID
+- Tests use `bun test`, not vitest
 
 ---
 
@@ -49,3 +51,24 @@ Started: 2026-02-16
 - Wired into `run()`: local results merged with remote results for unified summary output
 - Files changed: `src/commands/bootstrap.ts`
 - **Learnings:** `locateSkillInClone()` works identically for local paths — no clone needed, just pass the repo path directly
+
+## Task - core-5
+- Implemented `handleAdoptedSkills()` — without `--backup`: returns skipped warnings for each adopted skill
+- With `--backup`: extracts tar.gz to temp dir, reads manifest, copies matching skills via `skillsStore.addSkill()`
+- Skills not in manifest or missing from archive directory get distinct skip messages
+- Added `"from-backup"` to `FetchResult.status` union
+- Temp dir cleaned up in `finally` block
+- Wired into `run()`: adopted results merged into unified results array
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** Backup format is tar.gz with `manifest.json` (skills keyed by name) and `skills/<name>/` dirs; `tar` npm package used same as restore.ts
+
+## Task - core-6
+- Added `checkExisting()` — checks `skillsStore.hasSkill()` before each skill fetch
+- Without `--force`: returns `"exists"` status with hint to use `--force`
+- With `--force`: snapshots via `SnapshotManager.createSnapshot()`, removes old skill, returns undefined to proceed
+- Added `"exists"` to `FetchResult.status` union
+- `fetchRemoteRepos` pre-checks all skills before cloning (avoids unnecessary clone when all exist)
+- `fetchLocalRepos` and `handleAdoptedSkills` check per-skill inline
+- `SnapshotManager` instantiated with `getSnapshotsDir()` and hardcoded `maxCount: 10` (matches default config)
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `SnapshotManager` takes `(snapshotsDir, maxCount)` — no config dependency needed; pre-checking remote groups avoids clone when all skills already exist

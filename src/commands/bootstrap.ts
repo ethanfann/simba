@@ -7,7 +7,8 @@ import { join, resolve, dirname } from "node:path"
 import { access, mkdir, readFile, rm } from "node:fs/promises"
 import { RegistryStore } from "../core/registry-store"
 import { SkillsStore } from "../core/skills-store"
-import { getRegistryPath, getSkillsDir } from "../utils/paths"
+import { SnapshotManager } from "../core/snapshot"
+import { getRegistryPath, getSkillsDir, getSnapshotsDir } from "../utils/paths"
 import { discoverSkills } from "./install"
 import type { ManagedSkill, InstallSource } from "../core/types"
 
@@ -79,8 +80,32 @@ export function resolveGitUrl(repo: string, protocol: InstallSource["protocol"],
 
 export interface FetchResult {
   name: string
-  status: "fetched" | "linked" | "failed" | "not-found" | "skipped" | "from-backup"
+  status: "fetched" | "linked" | "failed" | "not-found" | "skipped" | "from-backup" | "exists"
   message?: string
+}
+
+/**
+ * Check if a skill already exists. Returns an "exists" FetchResult to skip,
+ * or undefined to proceed. With force: snapshots existing skill and removes it.
+ */
+async function checkExisting(
+  name: string,
+  skillsStore: SkillsStore,
+  force: boolean,
+  snapshots: SnapshotManager
+): Promise<FetchResult | undefined> {
+  const exists = await skillsStore.hasSkill(name)
+  if (!exists) return undefined
+
+  if (!force) {
+    return { name, status: "exists", message: "already exists (use --force to overwrite)" }
+  }
+
+  // --force: snapshot then remove
+  const skillPath = skillsStore.getSkillPath(name)
+  await snapshots.createSnapshot([skillPath], `bootstrap --force: ${name}`)
+  await skillsStore.removeSkill(name)
+  return undefined
 }
 
 /** Locate a skill within a cloned repo by its skillPath, or discover by name */
@@ -110,11 +135,24 @@ async function locateSkillInClone(
 export async function fetchRemoteRepos(
   groups: RepoGroup[],
   skillsStore: SkillsStore,
-  options: { ssh: boolean }
+  options: { ssh: boolean; force: boolean; snapshots: SnapshotManager }
 ): Promise<FetchResult[]> {
   const results: FetchResult[] = []
 
   for (const group of groups) {
+    // Pre-check all skills for existence before cloning
+    const pending: Array<{ name: string; skillPath: string | undefined }> = []
+    for (const skill of group.skills) {
+      const existing = await checkExisting(skill.name, skillsStore, options.force, options.snapshots)
+      if (existing !== undefined) {
+        results.push(existing)
+      } else {
+        pending.push(skill)
+      }
+    }
+
+    if (pending.length === 0) continue
+
     const url = resolveGitUrl(group.repo, group.protocol, options.ssh)
     const tempDir = join(tmpdir(), `simba-bootstrap-${Date.now()}`)
 
@@ -123,7 +161,7 @@ export async function fetchRemoteRepos(
       const git = simpleGit()
       await git.clone(url, tempDir, ["--depth", "1"])
 
-      for (const { name, skillPath } of group.skills) {
+      for (const { name, skillPath } of pending) {
         const skillDir = await locateSkillInClone(tempDir, name, skillPath)
         if (skillDir === undefined) {
           results.push({ name, status: "not-found", message: `not found in ${group.repo}` })
@@ -135,7 +173,7 @@ export async function fetchRemoteRepos(
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      for (const { name } of group.skills) {
+      for (const { name } of pending) {
         results.push({ name, status: "failed", message: `clone failed: ${message}` })
       }
     } finally {
@@ -149,7 +187,8 @@ export async function fetchRemoteRepos(
 /** Verify local repo paths exist and symlink skills into central store */
 export async function fetchLocalRepos(
   groups: RepoGroup[],
-  skillsStore: SkillsStore
+  skillsStore: SkillsStore,
+  options: { force: boolean; snapshots: SnapshotManager }
 ): Promise<FetchResult[]> {
   const results: FetchResult[] = []
 
@@ -166,6 +205,12 @@ export async function fetchLocalRepos(
     }
 
     for (const { name, skillPath } of group.skills) {
+      const existing = await checkExisting(name, skillsStore, options.force, options.snapshots)
+      if (existing !== undefined) {
+        results.push(existing)
+        continue
+      }
+
       const skillDir = await locateSkillInClone(repoPath, name, skillPath)
       if (skillDir === undefined) {
         results.push({ name, status: "not-found", message: `not found in ${repoPath}` })
@@ -189,7 +234,8 @@ interface BackupManifest {
 export async function handleAdoptedSkills(
   adopted: AdoptedSkill[],
   skillsStore: SkillsStore,
-  backupPath: string | undefined
+  backupPath: string | undefined,
+  options: { force: boolean; snapshots: SnapshotManager }
 ): Promise<FetchResult[]> {
   if (adopted.length === 0) return []
 
@@ -219,6 +265,12 @@ export async function handleAdoptedSkills(
           status: "skipped",
           message: "adopted skill — not found in backup archive",
         })
+        continue
+      }
+
+      const existing = await checkExisting(name, skillsStore, options.force, options.snapshots)
+      if (existing !== undefined) {
+        results.push(existing)
         continue
       }
 
@@ -328,10 +380,11 @@ export default defineCommand({
     }
 
     const skillsStore = new SkillsStore(getSkillsDir(), registryPath)
+    const snapshots = new SnapshotManager(getSnapshotsDir(), 10)
 
-    const remoteResults = await fetchRemoteRepos(remote, skillsStore, { ssh: args.ssh })
-    const localResults = await fetchLocalRepos(local, skillsStore)
-    const adoptedResults = await handleAdoptedSkills(adopted, skillsStore, args.backup)
+    const remoteResults = await fetchRemoteRepos(remote, skillsStore, { ssh: args.ssh, force: args.force, snapshots })
+    const localResults = await fetchLocalRepos(local, skillsStore, { force: args.force, snapshots })
+    const adoptedResults = await handleAdoptedSkills(adopted, skillsStore, args.backup, { force: args.force, snapshots })
     const results = [...remoteResults, ...localResults, ...adoptedResults]
 
     for (const r of results) {
