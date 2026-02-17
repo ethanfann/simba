@@ -1,0 +1,75 @@
+{
+  "prdName": "repo-as-skill",
+  "tasks": [
+    {
+      "id": "functional-1",
+      "category": "functional",
+      "description": "Add root SKILL.md detection as 5th discovery strategy in discoverSkills(). Only runs if strategies 1-4 found 0 skills. Reads frontmatter for name (fallback: basename). Sets relativePath to \".\".",
+      "steps": [
+        "discoverSkills() on a dir with only root SKILL.md returns 1 skill",
+        "Skill name comes from frontmatter name: field when present",
+        "Skill name falls back to directory basename when no frontmatter name",
+        "relativePath is \".\"",
+        "Root SKILL.md is NOT discovered if strategies 1-4 already found skills"
+      ],
+      "passes": true
+    },
+    {
+      "id": "functional-2",
+      "category": "functional",
+      "description": "Repo-as-skill installs correctly via simba install, including all subdirs (references/, scripts/, prompts/, templates/). installSource.skillPath stored as \".\" in registry.",
+      "steps": [
+        "simba install on a local repo-as-skill source installs the skill",
+        "Entire directory including references/ and scripts/ subdirs is copied",
+        "installSource.skillPath is \".\" in registry",
+        "--skill flag works with repo-as-skill",
+        "--all flag works with repo-as-skill"
+      ],
+      "passes": false
+    },
+    {
+      "id": "functional-3",
+      "category": "functional",
+      "description": "simba update re-discovers and updates root skills via relativePath === \".\" matching.",
+      "steps": [
+        "simba update re-discovers root skill after re-cloning",
+        "Matches on relativePath === \".\"",
+        "Directory hash comparison detects changes in any file"
+      ],
+      "passes": false
+    },
+    {
+      "id": "testing-1",
+      "category": "testing",
+      "description": "Unit tests for root skill discovery, install with subdirs, relativePath, and deduplication guard.",
+      "steps": [
+        "Test: discovers skill from root SKILL.md",
+        "Test: name from frontmatter",
+        "Test: name fallback to basename",
+        "Test: relativePath is \".\"",
+        "Test: root SKILL.md skipped when standard dirs have skills (dedup)",
+        "Test: install copies references/ and scripts/ subdirs",
+        "Test: installSource.skillPath is \".\"",
+        "All tests pass"
+      ],
+      "passes": false
+    }
+  ],
+  "context": {
+    "patterns": [
+      "Submodule-as-skill detection: src/commands/install.ts:232-247",
+      "discoverSkills() with seenNames dedup: src/commands/install.ts:203-277"
+    ],
+    "keyFiles": [
+      "src/commands/install.ts",
+      "src/commands/update.ts",
+      "src/core/skills-store.ts",
+      "tests/commands/install.test.ts"
+    ],
+    "nonGoals": [
+      ".gitignore-aware copy (filtering .git/, node_modules/)",
+      "Validating references/scripts/ directory structure",
+      "SKILL.md at arbitrary depth without skills/ parent"
+    ]
+  }
+}

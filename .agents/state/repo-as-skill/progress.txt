@@ -1,0 +1,22 @@
+# Progress Log
+PRD: repo-as-skill
+Started: 2026-02-16
+
+## Codebase Patterns
+<!-- Consolidate reusable patterns here -->
+- discoverSkills() uses seenNames Set for dedup, strategies run in priority order
+- Submodule-as-skill pattern: check SKILL.md at root, read frontmatter via gray-matter, fallback name from path
+- addSkill() does recursive cp, linkSkill() symlinks for local sources
+- Tests use bun:test, create temp dirs, import functions directly
+
+- relativePath computation: `relative(base, base)` returns `""`, not `"."` — must handle empty string case
+
+---
+<!-- Task logs below - APPEND ONLY -->
+
+## Task - functional-1
+- Added 5th discovery strategy to `discoverSkills()`: checks `basePath/SKILL.md` when strategies 1-4 find 0 skills
+- Name from frontmatter `name:`, fallback to `basename(basePath)`
+- Fixed relativePath to return `"."` instead of `"./"` for root skills
+- Files changed: `src/commands/install.ts`
+- **Learnings:** `relative(a, a)` returns `""` not `"."` — needed explicit empty-string check
