@@ -72,3 +72,13 @@ Started: 2026-02-16
 - `SnapshotManager` instantiated with `getSnapshotsDir()` and hardcoded `maxCount: 10` (matches default config)
 - Files changed: `src/commands/bootstrap.ts`
 - **Learnings:** `SnapshotManager` takes `(snapshotsDir, maxCount)` — no config dependency needed; pre-checking remote groups avoids clone when all skills already exist
+
+## Task - agent-1
+- Added `AssignResult` interface and `assignSkillsToAgents()` function
+- Fresh `AgentRegistry.detectAgents()` scan — not cached config
+- Iterates each successfully-fetched skill's `assignments` record, symlinks only for detected agents
+- Undetected agents logged as `"skipped"` with reason
+- Delegates to `skillsStore.assignSkill()` which respects `SkillAssignment.type` (directory vs file)
+- `"exists"` skills also get agent assignments (skill already in store, just needs symlinks)
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `ConfigStore.load()` merges with defaults so all known agents are always present; `expandPath()` needed to resolve `~` in `agent.globalPath`

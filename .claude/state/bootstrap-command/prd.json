@@ -102,7 +102,7 @@
         "SkillAssignment.type (directory vs file) is respected",
         "Symlink target matches SkillsStore.assignSkill() behavior"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "error-1",

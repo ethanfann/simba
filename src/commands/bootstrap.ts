@@ -8,9 +8,11 @@ import { access, mkdir, readFile, rm } from "node:fs/promises"
 import { RegistryStore } from "../core/registry-store"
 import { SkillsStore } from "../core/skills-store"
 import { SnapshotManager } from "../core/snapshot"
-import { getRegistryPath, getSkillsDir, getSnapshotsDir } from "../utils/paths"
+import { AgentRegistry } from "../core/agent-registry"
+import { ConfigStore } from "../core/config-store"
+import { getRegistryPath, getSkillsDir, getSnapshotsDir, getConfigPath, expandPath } from "../utils/paths"
 import { discoverSkills } from "./install"
-import type { ManagedSkill, InstallSource } from "../core/types"
+import type { ManagedSkill, InstallSource, SkillAssignment } from "../core/types"
 
 /** Skills with installSource can be re-fetched from their origin */
 export interface InstallableSkill {
@@ -316,6 +318,45 @@ export function partitionSkills(skills: Record<string, ManagedSkill>): Partition
   return { installable, adopted }
 }
 
+export interface AssignResult {
+  skill: string
+  agent: string
+  status: "assigned" | "skipped"
+  message?: string
+}
+
+/** Detect agents and create symlinks for each skill's assignments */
+export async function assignSkillsToAgents(
+  registry: { skills: Record<string, ManagedSkill> },
+  skillsStore: SkillsStore,
+  fetchedSkills: Set<string>,
+  config: { agents: Record<string, { globalPath: string; detected?: boolean }> }
+): Promise<AssignResult[]> {
+  const agentRegistry = new AgentRegistry(config.agents as Record<string, import("../core/types").Agent>)
+  const detected = await agentRegistry.detectAgents()
+  const results: AssignResult[] = []
+
+  for (const skillName of fetchedSkills) {
+    const skill = registry.skills[skillName]
+    if (!skill) continue
+
+    const assignments = skill.assignments
+    for (const [agentId, assignment] of Object.entries(assignments)) {
+      const agent = detected[agentId]
+      if (!agent?.detected) {
+        results.push({ skill: skillName, agent: agentId, status: "skipped", message: "agent not detected" })
+        continue
+      }
+
+      const agentSkillsDir = expandPath(agent.globalPath)
+      await skillsStore.assignSkill(skillName, agentSkillsDir, assignment)
+      results.push({ skill: skillName, agent: agentId, status: "assigned" })
+    }
+  }
+
+  return results
+}
+
 export default defineCommand({
   meta: { name: "bootstrap", description: "Restore all skills from registry" },
   args: {
@@ -390,5 +431,29 @@ export default defineCommand({
     for (const r of results) {
       p.log.step(`${r.name}: ${r.status}${r.message ? ` — ${r.message}` : ""}`)
     }
+
+    // Agent assignment: symlink skills to detected agents
+    const successStatuses = new Set(["fetched", "linked", "from-backup", "exists"])
+    const fetchedSkills = new Set(
+      results.filter(r => successStatuses.has(r.status)).map(r => r.name)
+    )
+
+    if (fetchedSkills.size > 0) {
+      const configStore = new ConfigStore(getConfigPath())
+      const config = await configStore.load()
+      const assignResults = await assignSkillsToAgents(registry, skillsStore, fetchedSkills, config)
+
+      const assigned = assignResults.filter(r => r.status === "assigned")
+      const skipped = assignResults.filter(r => r.status === "skipped")
+
+      if (assigned.length > 0) {
+        p.log.success(`Assigned ${assigned.length} skill-agent symlink(s)`)
+      }
+      for (const r of skipped) {
+        p.log.warn(`${r.skill} → ${r.agent}: ${r.message}`)
+      }
+    }
+
+    p.outro("Done")
   },
 })
