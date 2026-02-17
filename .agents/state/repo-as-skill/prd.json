@@ -25,7 +25,7 @@
         "--skill flag works with repo-as-skill",
         "--all flag works with repo-as-skill"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "functional-3",
@@ -36,7 +36,7 @@
         "Matches on relativePath === \".\"",
         "Directory hash comparison detects changes in any file"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "testing-1",
@@ -52,7 +52,7 @@
         "Test: installSource.skillPath is \".\"",
         "All tests pass"
       ],
-      "passes": false
+      "passes": true
     }
   ],
   "context": {
