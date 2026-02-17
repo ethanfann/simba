@@ -5,7 +5,7 @@ import { defineCommand, runMain, showUsage } from "citty"
 const main = defineCommand({
   meta: {
     name: "simba",
-    version: "0.2.0",
+    version: "0.5.0",
     description: "AI skills manager",
   },
   async run({ cmd, rawArgs }) {

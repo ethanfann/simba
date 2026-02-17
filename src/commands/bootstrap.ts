@@ -254,10 +254,34 @@ export async function handleAdoptedSkills(
   const tempDir = join(dirname(backupPath), `.simba-bootstrap-${Date.now()}`)
   try {
     await mkdir(tempDir, { recursive: true })
-    await tar.extract({ file: backupPath, cwd: tempDir })
 
-    const manifestRaw = await readFile(join(tempDir, "manifest.json"), "utf-8")
-    const manifest: BackupManifest = JSON.parse(manifestRaw) as BackupManifest
+    try {
+      await tar.extract({ file: backupPath, cwd: tempDir })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return adopted.map(({ name }) => ({
+        name,
+        status: "failed" as const,
+        message: `backup extraction failed: ${message}`,
+      }))
+    }
+
+    let manifest: BackupManifest
+    try {
+      const manifestRaw = await readFile(join(tempDir, "manifest.json"), "utf-8")
+      const parsed: unknown = JSON.parse(manifestRaw)
+      if (parsed === null || typeof parsed !== "object" || !("skills" in parsed)) {
+        throw new Error("missing 'skills' field")
+      }
+      manifest = parsed as BackupManifest
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return adopted.map(({ name }) => ({
+        name,
+        status: "failed" as const,
+        message: `invalid backup manifest: ${message}`,
+      }))
+    }
 
     const results: FetchResult[] = []
     for (const { name } of adopted) {
@@ -330,9 +354,9 @@ export async function assignSkillsToAgents(
   registry: { skills: Record<string, ManagedSkill> },
   skillsStore: SkillsStore,
   fetchedSkills: Set<string>,
-  config: { agents: Record<string, { globalPath: string; detected?: boolean }> }
+  config: { agents: Record<string, import("../core/types").Agent> }
 ): Promise<AssignResult[]> {
-  const agentRegistry = new AgentRegistry(config.agents as Record<string, import("../core/types").Agent>)
+  const agentRegistry = new AgentRegistry(config.agents)
   const detected = await agentRegistry.detectAgents()
   const results: AssignResult[] = []
 
@@ -454,7 +478,7 @@ export default defineCommand({
       // Preview agent assignments
       const configStore = new ConfigStore(getConfigPath())
       const config = await configStore.load()
-      const agentRegistry = new AgentRegistry(config.agents as Record<string, import("../core/types").Agent>)
+      const agentRegistry = new AgentRegistry(config.agents)
       const detected = await agentRegistry.detectAgents()
       const detectedNames = Object.entries(detected)
         .filter(([, a]) => a.detected)
@@ -496,6 +520,7 @@ export default defineCommand({
       const configStore = new ConfigStore(getConfigPath())
       const config = await configStore.load()
       assignResults = await assignSkillsToAgents(registry, skillsStore, fetchedSkills, config)
+      await registryStore.save(registry)
     }
 
     // --- Summary output ---
