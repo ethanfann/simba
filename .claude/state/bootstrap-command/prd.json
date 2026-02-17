@@ -1,0 +1,188 @@
+{
+  "prdName": "bootstrap-command",
+  "tasks": [
+    {
+      "id": "cli-1",
+      "category": "cli",
+      "description": "Register bootstrap subcommand in CLI entry point with citty defineCommand, positional registry-path arg, and --backup/--force/--ssh/--dry-run flags",
+      "steps": [
+        "simba bootstrap --help shows usage with all flags",
+        "simba --help lists bootstrap as a subcommand",
+        "Positional arg accepts a file path",
+        "--backup accepts a file path",
+        "--force, --ssh, --dry-run are boolean flags",
+        "-n is alias for --dry-run"
+      ],
+      "passes": true
+    },
+    {
+      "id": "core-1",
+      "category": "core",
+      "description": "Load registry from default XDG path or positional arg, partition skills into installable (has installSource) vs adopted (no installSource)",
+      "steps": [
+        "With no arg, reads ~/.config/simba/registry.json",
+        "With path arg, reads from that path",
+        "Skills with installSource are classified as installable",
+        "Skills without installSource are classified as adopted",
+        "Empty registry produces clean exit with message"
+      ],
+      "passes": true
+    },
+    {
+      "id": "core-2",
+      "category": "core",
+      "description": "Group installable skills by installSource.repo to minimize git clones — one clone per unique repo",
+      "steps": [
+        "Skills from same repo are grouped together",
+        "Local and remote repos are grouped separately",
+        "Each group contains skill names and their skillPath within the repo",
+        "Grouping handles both GitHub shorthand and full URLs"
+      ],
+      "passes": true
+    },
+    {
+      "id": "core-3",
+      "category": "core",
+      "description": "For each remote repo group: clone once (depth=1), locate skills by skillPath, copy to central store",
+      "steps": [
+        "Remote repo is cloned to temp dir with --depth 1",
+        "Each skill in the group is located by its skillPath",
+        "Skill files are copied to ~/.config/simba/skills/<name>/",
+        "Temp dir is cleaned up after extraction",
+        "installSource.protocol is respected (https vs ssh)",
+        "--ssh flag overrides protocol to ssh for all remote repos"
+      ],
+      "passes": true
+    },
+    {
+      "id": "core-4",
+      "category": "core",
+      "description": "For local installSource: verify path exists, create symlink to central store (matching install behavior)",
+      "steps": [
+        "Local path that exists gets symlinked into central store",
+        "Local path that doesn't exist is skipped with warning",
+        "Warning message names the skill and the missing path",
+        "Skipped local skills are included in final summary"
+      ],
+      "passes": true
+    },
+    {
+      "id": "core-5",
+      "category": "core",
+      "description": "Handle adopted skills: skip with warning by default, restore from --backup archive when provided",
+      "steps": [
+        "Without --backup: adopted skills listed as skipped warnings",
+        "With --backup: tar.gz is extracted, adopted skills found in archive are copied to central store",
+        "Adopted skills not found in archive are still warned about",
+        "Backup extraction uses same format as simba backup output"
+      ],
+      "passes": true
+    },
+    {
+      "id": "core-6",
+      "category": "core",
+      "description": "Idempotency: skip existing skills by default, --force creates snapshot then overwrites",
+      "steps": [
+        "Skill already in central store is skipped with 'already exists' message",
+        "--force with existing skills creates a snapshot before overwriting",
+        "Snapshot follows existing snapshot system (autoSnapshot pattern)",
+        "--force removes old skill dir and replaces with fresh fetch",
+        "Missing symlinks are recreated in both modes"
+      ],
+      "passes": true
+    },
+    {
+      "id": "agent-1",
+      "category": "agent",
+      "description": "Always run fresh agent detection, create symlinks only for detected agents per registry assignments",
+      "steps": [
+        "AgentRegistry.detectAgents() is called (fresh scan, not cached config)",
+        "For each skill's assignments in registry: symlink only if agent is detected",
+        "Undetected agents are logged as skipped",
+        "SkillAssignment.type (directory vs file) is respected",
+        "Symlink target matches SkillsStore.assignSkill() behavior"
+      ],
+      "passes": true
+    },
+    {
+      "id": "error-1",
+      "category": "error",
+      "description": "Per-repo error isolation: failed clone skips that repo's skills, doesn't abort bootstrap",
+      "steps": [
+        "Clone failure for one repo logs error and continues to next repo",
+        "Skills from failed repo are marked as failed in summary",
+        "Successful repos are unaffected by earlier failures",
+        "Exit code is non-zero if any skills failed"
+      ],
+      "passes": true
+    },
+    {
+      "id": "cli-2",
+      "category": "cli",
+      "description": "Dry-run mode: preview all actions without filesystem changes",
+      "steps": [
+        "--dry-run shows which repos would be cloned",
+        "--dry-run shows which skills would be fetched/skipped/warned",
+        "--dry-run shows which agent symlinks would be created",
+        "No files are written, no repos are cloned, no symlinks created"
+      ],
+      "passes": true
+    },
+    {
+      "id": "cli-3",
+      "category": "cli",
+      "description": "Summary output at end: skill name, source, status (fetched/skipped/failed/from-backup), agent assignment counts",
+      "steps": [
+        "Output lists each skill with its resolution status",
+        "Agent symlink counts shown per detected agent",
+        "Skipped agents listed with reason (not detected)",
+        "Total restored/skipped/failed counts shown",
+        "Output uses @clack/prompts consistent with other simba commands"
+      ],
+      "passes": true
+    },
+    {
+      "id": "test-1",
+      "category": "testing",
+      "description": "Tests for core bootstrap logic: registry parsing, repo grouping, idempotency, error isolation",
+      "steps": [
+        "Test: skills partitioned correctly into installable vs adopted",
+        "Test: skills grouped by repo correctly",
+        "Test: existing skills skipped without --force",
+        "Test: --force triggers snapshot before overwrite",
+        "Test: failed repo doesn't abort other repos",
+        "Test: local missing path produces warning not error"
+      ],
+      "passes": true
+    }
+  ],
+  "context": {
+    "patterns": [
+      "CLI commands: src/commands/install.ts — citty defineCommand, @clack/prompts, runInstall() pattern",
+      "Agent detection: src/commands/detect.ts — AgentRegistry.detectAgents()",
+      "Symlink assignment: src/commands/assign.ts — SkillsStore.assignSkill()",
+      "Backup extraction: src/commands/restore.ts — tar.gz handling",
+      "Snapshot creation: src/core/snapshot.ts — autoSnapshot before destructive ops"
+    ],
+    "keyFiles": [
+      "src/core/types.ts",
+      "src/core/registry-store.ts",
+      "src/core/skills-store.ts",
+      "src/core/config-store.ts",
+      "src/core/agent-registry.ts",
+      "src/commands/install.ts",
+      "src/commands/assign.ts",
+      "src/commands/restore.ts",
+      "src/utils/paths.ts",
+      "src/utils/symlinks.ts",
+      "src/index.ts"
+    ],
+    "nonGoals": [
+      "Parallel cloning",
+      "Skill pinning / version locking",
+      "Interactive skill selection",
+      "Config.toml generation",
+      "Registry conflict resolution"
+    ]
+  }
+}

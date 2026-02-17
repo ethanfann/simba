@@ -1,0 +1,115 @@
+# Progress Log
+PRD: bootstrap-command
+Started: 2026-02-16
+
+## Codebase Patterns
+- CLI commands use camelCase arg names (e.g. `dryRun` not `dry-run`)
+- `alias: "n"` for dry-run shorthand is standard across commands
+- Subcommands lazy-loaded via `() => import("./commands/x").then(m => m.default)`
+- Positional args use `required: false` when optional
+- State dir lives at `.claude/state/` not `.agents/state/`
+- Use type guard functions (`is` predicates) to narrow optional fields instead of `as Type` assertions
+- `SnapshotManager(getSnapshotsDir(), maxCount)` for pre-destructive snapshots; `createSnapshot([paths], reason)` returns snapshot ID
+- Tests use `bun test`, not vitest
+
+---
+
+## Task - cli-1
+- Registered `bootstrap` subcommand in `src/index.ts`
+- Created `src/commands/bootstrap.ts` with positional `registryPath`, `--backup`, `--force`, `--ssh`, `--dryRun`/`-n`
+- Files changed: `src/index.ts`, `src/commands/bootstrap.ts` (new)
+- **Learnings:** citty renders camelCase args as `--camelCase` in help output (e.g. `--dryRun`), consistent with other simba commands
+
+## Task - core-1
+- Load registry from positional arg or default XDG path via `getRegistryPath()`
+- Partition skills into `installable` (has `installSource`) vs `adopted` (no `installSource`)
+- Empty registry exits cleanly with `p.log.info` message
+- Exported `partitionSkills()` as pure function for testability
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `RegistryStore.load()` returns empty registry on ENOENT, so "empty" check is on `Object.entries(registry.skills).length`
+
+## Task - core-2
+- Added `RepoGroup` interface and `groupByRepo()` pure function
+- Groups `InstallableSkill[]` by `installSource.repo`, separates into `remote` and `local`
+- Refined `InstallableSkill.skill` type to guarantee `installSource` via type guard `hasInstallSource()`
+- Wired into `run()` with summary logging of repo/skill counts
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** Use type guard (`is` predicate) to narrow `installSource` from optional to required, avoids `as Type` assertion
+
+## Task - core-3
+- Implemented `resolveGitUrl()` to build clone URLs from repo string + protocol, with `--ssh` override
+- Implemented `locateSkillInClone()` — resolves `skillPath` directly if available, falls back to `discoverSkills()` scan
+- Implemented `fetchRemoteRepos()` — iterates repo groups, clones each to temp dir (depth=1), extracts skills via `skillsStore.addSkill()`, cleans up
+- Wired into `run()` with per-skill status logging via `@clack/prompts`
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `resolve(cloneDir, skillPath)` correctly handles both `./relative` and bare paths; reusing `discoverSkills()` from install.ts for fallback avoids duplicating scan logic
+
+## Task - core-4
+- Implemented `fetchLocalRepos()` — verifies local path exists via `access()`, symlinks skills via `skillsStore.linkSkill()`
+- Missing paths skip all skills in that group with `"skipped"` status and descriptive message naming the path
+- Added `"linked"` and `"skipped"` to `FetchResult.status` union
+- Wired into `run()`: local results merged with remote results for unified summary output
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `locateSkillInClone()` works identically for local paths — no clone needed, just pass the repo path directly
+
+## Task - core-5
+- Implemented `handleAdoptedSkills()` — without `--backup`: returns skipped warnings for each adopted skill
+- With `--backup`: extracts tar.gz to temp dir, reads manifest, copies matching skills via `skillsStore.addSkill()`
+- Skills not in manifest or missing from archive directory get distinct skip messages
+- Added `"from-backup"` to `FetchResult.status` union
+- Temp dir cleaned up in `finally` block
+- Wired into `run()`: adopted results merged into unified results array
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** Backup format is tar.gz with `manifest.json` (skills keyed by name) and `skills/<name>/` dirs; `tar` npm package used same as restore.ts
+
+## Task - core-6
+- Added `checkExisting()` — checks `skillsStore.hasSkill()` before each skill fetch
+- Without `--force`: returns `"exists"` status with hint to use `--force`
+- With `--force`: snapshots via `SnapshotManager.createSnapshot()`, removes old skill, returns undefined to proceed
+- Added `"exists"` to `FetchResult.status` union
+- `fetchRemoteRepos` pre-checks all skills before cloning (avoids unnecessary clone when all exist)
+- `fetchLocalRepos` and `handleAdoptedSkills` check per-skill inline
+- `SnapshotManager` instantiated with `getSnapshotsDir()` and hardcoded `maxCount: 10` (matches default config)
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `SnapshotManager` takes `(snapshotsDir, maxCount)` — no config dependency needed; pre-checking remote groups avoids clone when all skills already exist
+
+## Task - agent-1
+- Added `AssignResult` interface and `assignSkillsToAgents()` function
+- Fresh `AgentRegistry.detectAgents()` scan — not cached config
+- Iterates each successfully-fetched skill's `assignments` record, symlinks only for detected agents
+- Undetected agents logged as `"skipped"` with reason
+- Delegates to `skillsStore.assignSkill()` which respects `SkillAssignment.type` (directory vs file)
+- `"exists"` skills also get agent assignments (skill already in store, just needs symlinks)
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `ConfigStore.load()` merges with defaults so all known agents are always present; `expandPath()` needed to resolve `~` in `agent.globalPath`
+
+## Task - error-1
+- Error isolation already implemented: `fetchRemoteRepos` wraps each group's clone+extract in try/catch, marks all pending skills as `"failed"`, continues to next group
+- Added non-zero exit code: `process.exit(1)` when any result has `status === "failed"`
+- Outro message differentiates: "Done (with errors)" vs "Done"
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** Most of error-1 was already done by core-3's try/catch structure; only missing piece was propagating failure to exit code
+
+## Task - cli-2
+- Added `--dryRun` early return in `run()` after grouping/partitioning, before any filesystem ops
+- Previews: remote repos with clone URLs, local repos with paths, adopted skills with backup status
+- Previews agent assignments using real `AgentRegistry.detectAgents()` (read-only)
+- No `SkillsStore`, `SnapshotManager`, or git operations instantiated in dry-run path
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** Agent detection is read-only (just checks filesystem for agent dirs), safe to run in dry-run mode for accurate preview
+
+## Task - cli-3
+- Replaced flat per-skill logging with structured summary section
+- Per-skill: status-appropriate log levels (success/warn/error) with status and message
+- Per-agent: counts of assigned skills, skipped agents listed with reason
+- Totals line: fetched/linked/restored/existing/skipped/failed counts in outro
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `FetchResult["status"]` indexing extracts the union type from the interface — useful for `Set<>` type param instead of repeating string literals
+
+## Task - test-1
+- 20 tests covering: partitionSkills (4), groupByRepo (3), resolveGitUrl (5), fetchLocalRepos (4), handleAdoptedSkills (3), error isolation (1)
+- Pure function tests for partitionSkills, groupByRepo, resolveGitUrl — no mocks needed
+- Async tests use real SkillsStore + SnapshotManager against temp dirs
+- handleAdoptedSkills tests create real tar.gz backups via `tar` npm package
+- Files changed: `tests/commands/bootstrap.test.ts` (new)
+- **Learnings:** `tar.create` with `cwd` option simplifies creating test archives; no need to mock SkillsStore since it operates on real filesystem in temp dirs

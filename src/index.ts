@@ -5,7 +5,7 @@ import { defineCommand, runMain, showUsage } from "citty"
 const main = defineCommand({
   meta: {
     name: "simba",
-    version: "0.2.0",
+    version: "0.5.0",
     description: "AI skills manager",
   },
   async run({ cmd, rawArgs }) {
@@ -17,6 +17,7 @@ const main = defineCommand({
     adopt: () => import("./commands/adopt").then((m) => m.default),
     assign: () => import("./commands/assign").then((m) => m.default),
     backup: () => import("./commands/backup").then((m) => m.default),
+    bootstrap: () => import("./commands/bootstrap").then((m) => m.default),
     detect: () => import("./commands/detect").then((m) => m.default),
     doctor: () => import("./commands/doctor").then((m) => m.default),
     import: () => import("./commands/import").then((m) => m.default),
