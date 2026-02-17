@@ -1,9 +1,10 @@
 import { defineCommand } from "citty"
 import * as p from "@clack/prompts"
 import simpleGit from "simple-git"
+import * as tar from "tar"
 import { tmpdir } from "node:os"
-import { join, resolve } from "node:path"
-import { access, mkdir, rm } from "node:fs/promises"
+import { join, resolve, dirname } from "node:path"
+import { access, mkdir, readFile, rm } from "node:fs/promises"
 import { RegistryStore } from "../core/registry-store"
 import { SkillsStore } from "../core/skills-store"
 import { getRegistryPath, getSkillsDir } from "../utils/paths"
@@ -78,7 +79,7 @@ export function resolveGitUrl(repo: string, protocol: InstallSource["protocol"],
 
 export interface FetchResult {
   name: string
-  status: "fetched" | "linked" | "failed" | "not-found" | "skipped"
+  status: "fetched" | "linked" | "failed" | "not-found" | "skipped" | "from-backup"
   message?: string
 }
 
@@ -179,6 +180,70 @@ export async function fetchLocalRepos(
   return results
 }
 
+/** Backup archive manifest matching simba backup output */
+interface BackupManifest {
+  skills: Record<string, unknown>
+}
+
+/** Handle adopted skills: warn by default, restore from backup archive when provided */
+export async function handleAdoptedSkills(
+  adopted: AdoptedSkill[],
+  skillsStore: SkillsStore,
+  backupPath: string | undefined
+): Promise<FetchResult[]> {
+  if (adopted.length === 0) return []
+
+  // No backup — warn about each adopted skill
+  if (backupPath === undefined) {
+    return adopted.map(({ name }) => ({
+      name,
+      status: "skipped" as const,
+      message: "adopted skill — no installSource and no --backup provided",
+    }))
+  }
+
+  // Extract backup to temp dir and read manifest
+  const tempDir = join(dirname(backupPath), `.simba-bootstrap-${Date.now()}`)
+  try {
+    await mkdir(tempDir, { recursive: true })
+    await tar.extract({ file: backupPath, cwd: tempDir })
+
+    const manifestRaw = await readFile(join(tempDir, "manifest.json"), "utf-8")
+    const manifest: BackupManifest = JSON.parse(manifestRaw) as BackupManifest
+
+    const results: FetchResult[] = []
+    for (const { name } of adopted) {
+      if (!(name in manifest.skills)) {
+        results.push({
+          name,
+          status: "skipped",
+          message: "adopted skill — not found in backup archive",
+        })
+        continue
+      }
+
+      const sourcePath = join(tempDir, "skills", name)
+      try {
+        await access(sourcePath)
+      } catch {
+        results.push({
+          name,
+          status: "skipped",
+          message: "adopted skill — listed in manifest but missing from archive",
+        })
+        continue
+      }
+
+      await skillsStore.addSkill(name, sourcePath)
+      results.push({ name, status: "from-backup" })
+    }
+
+    return results
+  } finally {
+    await rm(tempDir, { recursive: true, force: true })
+  }
+}
+
 function hasInstallSource(skill: ManagedSkill): skill is ManagedSkill & { installSource: InstallSource } {
   return skill.installSource !== undefined
 }
@@ -266,13 +331,11 @@ export default defineCommand({
 
     const remoteResults = await fetchRemoteRepos(remote, skillsStore, { ssh: args.ssh })
     const localResults = await fetchLocalRepos(local, skillsStore)
-    const results = [...remoteResults, ...localResults]
+    const adoptedResults = await handleAdoptedSkills(adopted, skillsStore, args.backup)
+    const results = [...remoteResults, ...localResults, ...adoptedResults]
 
     for (const r of results) {
       p.log.step(`${r.name}: ${r.status}${r.message ? ` — ${r.message}` : ""}`)
     }
-
-    // Subsequent tasks will handle adopted skills, agent symlinks, etc.
-    void args
   },
 })
