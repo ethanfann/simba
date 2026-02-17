@@ -19,6 +19,7 @@ const AGENT_DEFINITIONS: [string, string, string, string, string][] = [
     ["antigravity", "Antigravity", "Antigrav", "~/.gemini/antigravity/skills", ".agent/skills"],
     ["clawdbot", "Clawdbot", "Clawdbot", "~/.clawdbot/skills", "skills"],
     ["droid", "Droid", "Droid", "~/.factory/skills", ".factory/skills"],
+    ["pi", "pi", "pi", "~/.pi/agent/skills", ".pi/skills"],
 ];
 
 const DEFAULT_AGENTS: Record<string, Agent> = Object.fromEntries(
