@@ -1,7 +1,13 @@
 import { defineCommand } from "citty"
 import * as p from "@clack/prompts"
+import simpleGit from "simple-git"
+import { tmpdir } from "node:os"
+import { join, resolve } from "node:path"
+import { access, mkdir, rm } from "node:fs/promises"
 import { RegistryStore } from "../core/registry-store"
-import { getRegistryPath } from "../utils/paths"
+import { SkillsStore } from "../core/skills-store"
+import { getRegistryPath, getSkillsDir } from "../utils/paths"
+import { discoverSkills } from "./install"
 import type { ManagedSkill, InstallSource } from "../core/types"
 
 /** Skills with installSource can be re-fetched from their origin */
@@ -54,6 +60,89 @@ export function groupByRepo(skills: InstallableSkill[]): { remote: RepoGroup[]; 
   }
 
   return { remote, local }
+}
+
+/** Build a git clone URL from repo string and protocol */
+export function resolveGitUrl(repo: string, protocol: InstallSource["protocol"], sshOverride: boolean): string {
+  const effectiveProtocol = sshOverride ? "ssh" : protocol
+  // Already a full URL
+  if (repo.includes("://") || repo.startsWith("git@")) {
+    return repo
+  }
+  // GitHub shorthand (user/repo)
+  if (effectiveProtocol === "ssh") {
+    return `git@github.com:${repo}.git`
+  }
+  return `https://github.com/${repo}`
+}
+
+export interface FetchResult {
+  name: string
+  status: "fetched" | "failed" | "not-found"
+  message?: string
+}
+
+/** Locate a skill within a cloned repo by its skillPath, or discover by name */
+async function locateSkillInClone(
+  cloneDir: string,
+  skillName: string,
+  skillPath: string | undefined
+): Promise<string | undefined> {
+  // If we have an explicit skillPath, resolve it directly
+  if (skillPath !== undefined) {
+    const resolved = resolve(cloneDir, skillPath)
+    try {
+      await access(join(resolved, "SKILL.md"))
+      return resolved
+    } catch {
+      return undefined
+    }
+  }
+
+  // No skillPath — discover skills in clone and find by name
+  const discovered = await discoverSkills(cloneDir)
+  const match = discovered.find(s => s.name === skillName)
+  return match?.path
+}
+
+/** Clone each remote repo group, extract skills, copy to central store */
+export async function fetchRemoteRepos(
+  groups: RepoGroup[],
+  skillsStore: SkillsStore,
+  options: { ssh: boolean }
+): Promise<FetchResult[]> {
+  const results: FetchResult[] = []
+
+  for (const group of groups) {
+    const url = resolveGitUrl(group.repo, group.protocol, options.ssh)
+    const tempDir = join(tmpdir(), `simba-bootstrap-${Date.now()}`)
+
+    try {
+      await mkdir(tempDir, { recursive: true })
+      const git = simpleGit()
+      await git.clone(url, tempDir, ["--depth", "1"])
+
+      for (const { name, skillPath } of group.skills) {
+        const skillDir = await locateSkillInClone(tempDir, name, skillPath)
+        if (skillDir === undefined) {
+          results.push({ name, status: "not-found", message: `not found in ${group.repo}` })
+          continue
+        }
+
+        await skillsStore.addSkill(name, skillDir)
+        results.push({ name, status: "fetched" })
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      for (const { name } of group.skills) {
+        results.push({ name, status: "failed", message: `clone failed: ${message}` })
+      }
+    } finally {
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  }
+
+  return results
 }
 
 function hasInstallSource(skill: ManagedSkill): skill is ManagedSkill & { installSource: InstallSource } {
@@ -139,9 +228,16 @@ export default defineCommand({
       )
     }
 
-    // Subsequent tasks will handle cloning, copying, symlinks, etc.
+    const skillsStore = new SkillsStore(getSkillsDir(), registryPath)
+
+    const results = await fetchRemoteRepos(remote, skillsStore, { ssh: args.ssh })
+
+    for (const r of results) {
+      p.log.step(`${r.name}: ${r.status}${r.message ? ` — ${r.message}` : ""}`)
+    }
+
+    // Subsequent tasks will handle local repos, adopted skills, agent symlinks, etc.
     void args
-    void remote
     void local
   },
 })
