@@ -454,6 +454,8 @@ export default defineCommand({
       }
     }
 
-    p.outro("Done")
+    const hasFailed = results.some(r => r.status === "failed")
+    p.outro(hasFailed ? "Done (with errors)" : "Done")
+    if (hasFailed) process.exit(1)
   },
 })

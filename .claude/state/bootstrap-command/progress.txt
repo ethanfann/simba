@@ -82,3 +82,10 @@ Started: 2026-02-16
 - `"exists"` skills also get agent assignments (skill already in store, just needs symlinks)
 - Files changed: `src/commands/bootstrap.ts`
 - **Learnings:** `ConfigStore.load()` merges with defaults so all known agents are always present; `expandPath()` needed to resolve `~` in `agent.globalPath`
+
+## Task - error-1
+- Error isolation already implemented: `fetchRemoteRepos` wraps each group's clone+extract in try/catch, marks all pending skills as `"failed"`, continues to next group
+- Added non-zero exit code: `process.exit(1)` when any result has `status === "failed"`
+- Outro message differentiates: "Done (with errors)" vs "Done"
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** Most of error-1 was already done by core-3's try/catch structure; only missing piece was propagating failure to exit code
