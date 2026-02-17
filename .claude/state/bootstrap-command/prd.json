@@ -126,7 +126,7 @@
         "--dry-run shows which agent symlinks would be created",
         "No files are written, no repos are cloned, no symlinks created"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "cli-3",

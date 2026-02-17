@@ -89,3 +89,11 @@ Started: 2026-02-16
 - Outro message differentiates: "Done (with errors)" vs "Done"
 - Files changed: `src/commands/bootstrap.ts`
 - **Learnings:** Most of error-1 was already done by core-3's try/catch structure; only missing piece was propagating failure to exit code
+
+## Task - cli-2
+- Added `--dryRun` early return in `run()` after grouping/partitioning, before any filesystem ops
+- Previews: remote repos with clone URLs, local repos with paths, adopted skills with backup status
+- Previews agent assignments using real `AgentRegistry.detectAgents()` (read-only)
+- No `SkillsStore`, `SnapshotManager`, or git operations instantiated in dry-run path
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** Agent detection is read-only (just checks filesystem for agent dirs), safe to run in dry-run mode for accurate preview

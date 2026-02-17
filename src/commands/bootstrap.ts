@@ -420,6 +420,63 @@ export default defineCommand({
       )
     }
 
+    // Dry-run: preview all actions without filesystem changes
+    if (args.dryRun) {
+      if (remote.length > 0) {
+        p.log.step("Would clone remote repos:")
+        for (const group of remote) {
+          const url = resolveGitUrl(group.repo, group.protocol, args.ssh)
+          p.log.message(`  ${url}`)
+          for (const s of group.skills) {
+            p.log.message(`    → ${s.name}${s.skillPath ? ` (${s.skillPath})` : ""}`)
+          }
+        }
+      }
+
+      if (local.length > 0) {
+        p.log.step("Would link local repos:")
+        for (const group of local) {
+          p.log.message(`  ${group.repo}`)
+          for (const s of group.skills) {
+            p.log.message(`    → ${s.name}${s.skillPath ? ` (${s.skillPath})` : ""}`)
+          }
+        }
+      }
+
+      if (adopted.length > 0) {
+        p.log.step(`Would handle ${adopted.length} adopted skill(s):`)
+        for (const { name } of adopted) {
+          const action = args.backup ? "restore from backup" : "skip (no --backup)"
+          p.log.message(`  ${name}: ${action}`)
+        }
+      }
+
+      // Preview agent assignments
+      const configStore = new ConfigStore(getConfigPath())
+      const config = await configStore.load()
+      const agentRegistry = new AgentRegistry(config.agents as Record<string, import("../core/types").Agent>)
+      const detected = await agentRegistry.detectAgents()
+      const detectedNames = Object.entries(detected)
+        .filter(([, a]) => a.detected)
+        .map(([id]) => id)
+
+      if (detectedNames.length > 0) {
+        p.log.step(`Would assign to detected agents: ${detectedNames.join(", ")}`)
+        const allSkillNames = [...installable.map(s => s.name), ...adopted.map(s => s.name)]
+        for (const skillName of allSkillNames) {
+          const skill = registry.skills[skillName]
+          if (!skill) continue
+          for (const [agentId, _assignment] of Object.entries(skill.assignments)) {
+            const status = detected[agentId]?.detected ? "symlink" : "skip (not detected)"
+            p.log.message(`  ${skillName} → ${agentId}: ${status}`)
+          }
+        }
+      }
+
+      p.outro("Dry run complete — no changes made")
+      return
+    }
+
     const skillsStore = new SkillsStore(getSkillsDir(), registryPath)
     const snapshots = new SnapshotManager(getSnapshotsDir(), 10)
 
