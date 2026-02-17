@@ -105,3 +105,11 @@ Started: 2026-02-16
 - Totals line: fetched/linked/restored/existing/skipped/failed counts in outro
 - Files changed: `src/commands/bootstrap.ts`
 - **Learnings:** `FetchResult["status"]` indexing extracts the union type from the interface — useful for `Set<>` type param instead of repeating string literals
+
+## Task - test-1
+- 20 tests covering: partitionSkills (4), groupByRepo (3), resolveGitUrl (5), fetchLocalRepos (4), handleAdoptedSkills (3), error isolation (1)
+- Pure function tests for partitionSkills, groupByRepo, resolveGitUrl — no mocks needed
+- Async tests use real SkillsStore + SnapshotManager against temp dirs
+- handleAdoptedSkills tests create real tar.gz backups via `tar` npm package
+- Files changed: `tests/commands/bootstrap.test.ts` (new)
+- **Learnings:** `tar.create` with `cwd` option simplifies creating test archives; no need to mock SkillsStore since it operates on real filesystem in temp dirs

@@ -153,7 +153,7 @@
         "Test: failed repo doesn't abort other repos",
         "Test: local missing path produces warning not error"
       ],
-      "passes": false
+      "passes": true
     }
   ],
   "context": {
