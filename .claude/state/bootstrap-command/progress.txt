@@ -1,0 +1,18 @@
+# Progress Log
+PRD: bootstrap-command
+Started: 2026-02-16
+
+## Codebase Patterns
+- CLI commands use camelCase arg names (e.g. `dryRun` not `dry-run`)
+- `alias: "n"` for dry-run shorthand is standard across commands
+- Subcommands lazy-loaded via `() => import("./commands/x").then(m => m.default)`
+- Positional args use `required: false` when optional
+- State dir lives at `.claude/state/` not `.agents/state/`
+
+---
+
+## Task - cli-1
+- Registered `bootstrap` subcommand in `src/index.ts`
+- Created `src/commands/bootstrap.ts` with positional `registryPath`, `--backup`, `--force`, `--ssh`, `--dryRun`/`-n`
+- Files changed: `src/index.ts`, `src/commands/bootstrap.ts` (new)
+- **Learnings:** citty renders camelCase args as `--camelCase` in help output (e.g. `--dryRun`), consistent with other simba commands
