@@ -31,7 +31,7 @@ interface MarketplaceJson {
   plugins?: MarketplacePlugin[]
 }
 
-const SKILL_DIRS = ["skills", ".claude/skills", ".cursor/skills", ".codex/skills"]
+const SKILL_DIRS = ["skills", ".agents/skills", ".claude/skills", ".cursor/skills", ".codex/skills"]
 
 interface SubmoduleInfo {
   path: string

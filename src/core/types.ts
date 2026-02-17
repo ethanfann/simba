@@ -6,6 +6,7 @@ export interface Agent {
   shortName: string // Short display name for matrix views (max 8 chars)
   globalPath: string
   projectPath: string
+  universal: boolean // Uses .agents/skills as project path
   detected: boolean
 }
 

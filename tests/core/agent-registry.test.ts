@@ -19,6 +19,7 @@ describe("AgentRegistry", () => {
         shortName: "Test",
         globalPath: join(tempDir, ".testagent/skills"),
         projectPath: ".testagent/skills",
+        universal: false,
         detected: false,
       },
     }

@@ -41,6 +41,7 @@ describe("adopt command", () => {
           shortName: "Claude",
           globalPath: claudeDir,
           projectPath: ".claude/skills",
+          universal: false,
           detected: true,
         }
       },

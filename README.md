@@ -7,7 +7,7 @@
 [![npm version](https://img.shields.io/npm/v/simba-skills)](https://www.npmjs.com/package/simba-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-AI skills manager with a central store and symlink-based distribution across 14+ coding agents.
+AI skills manager with a central store and symlink-based distribution across 17+ coding agents.
 
 ## Why Simba?
 
@@ -108,22 +108,32 @@ simba undo
 
 ## Supported Agents
 
+### Universal (`.agents/skills`)
+
+| Agent | Global Path | Project Path |
+|-------|-------------|--------------|
+| Amp | `~/.config/agents/skills` | `.agents/skills` |
+| Codex | `~/.codex/skills` | `.agents/skills` |
+| GitHub Copilot | `~/.copilot/skills` | `.agents/skills` |
+| Gemini CLI | `~/.gemini/skills` | `.agents/skills` |
+| OpenCode | `~/.config/opencode/skills` | `.agents/skills` |
+| Kimi Code CLI | `~/.config/agents/skills` | `.agents/skills` |
+| Replit | `~/.config/agents/skills` | `.agents/skills` |
+
+### Custom
+
 | Agent | Global Path | Project Path |
 |-------|-------------|--------------|
 | Claude Code | `~/.claude/skills` | `.claude/skills` |
 | Cursor | `~/.cursor/skills` | `.cursor/skills` |
-| Codex | `~/.codex/skills` | `.codex/skills` |
-| GitHub Copilot | `~/.copilot/skills` | `.github/skills` |
-| Gemini CLI | `~/.gemini/skills` | `.gemini/skills` |
 | Windsurf | `~/.codeium/windsurf/skills` | `.windsurf/skills` |
-| Amp | `~/.config/agents/skills` | `.agents/skills` |
 | Goose | `~/.config/goose/skills` | `.goose/skills` |
-| OpenCode | `~/.config/opencode/skill` | `.opencode/skill` |
 | Kilo Code | `~/.kilocode/skills` | `.kilocode/skills` |
 | Roo Code | `~/.roo/skills` | `.roo/skills` |
 | Antigravity | `~/.gemini/antigravity/skills` | `.agent/skills` |
-| Clawdbot | `~/.clawdbot/skills` | `skills` |
 | Droid | `~/.factory/skills` | `.factory/skills` |
+| pi | `~/.pi/agent/skills` | `.pi/skills` |
+| OpenClaw | `~/.openclaw/skills` | `skills` |
 
 ## Architecture
 

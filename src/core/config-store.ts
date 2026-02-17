@@ -3,31 +3,40 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Config, Agent } from "./types";
 
-// Add new agents here: [id, name, shortName, globalPath, projectPath]
-const AGENT_DEFINITIONS: [string, string, string, string, string][] = [
-    ["claude", "Claude Code", "Claude", "~/.claude/skills", ".claude/skills"],
-    ["cursor", "Cursor", "Cursor", "~/.cursor/skills", ".cursor/skills"],
-    ["codex", "Codex", "Codex", "~/.codex/skills", ".codex/skills"],
-    ["copilot", "GitHub Copilot", "Copilot", "~/.copilot/skills", ".github/skills"],
-    ["gemini", "Gemini CLI", "Gemini", "~/.gemini/skills", ".gemini/skills"],
-    ["windsurf", "Windsurf", "Windsurf", "~/.codeium/windsurf/skills", ".windsurf/skills"],
-    ["amp", "Amp", "Amp", "~/.config/agents/skills", ".agents/skills"],
-    ["goose", "Goose", "Goose", "~/.config/goose/skills", ".goose/skills"],
-    ["opencode", "OpenCode", "OpenCode", "~/.config/opencode/skills", ".opencode/skills"],
-    ["kilo", "Kilo Code", "Kilo", "~/.kilocode/skills", ".kilocode/skills"],
-    ["roo", "Roo Code", "Roo", "~/.roo/skills", ".roo/skills"],
-    ["antigravity", "Antigravity", "Antigrav", "~/.gemini/antigravity/skills", ".agent/skills"],
-    ["clawdbot", "Clawdbot", "Clawdbot", "~/.clawdbot/skills", "skills"],
-    ["droid", "Droid", "Droid", "~/.factory/skills", ".factory/skills"],
-    ["pi", "pi", "pi", "~/.pi/agent/skills", ".pi/skills"],
+// Add new agents here: [id, name, shortName, globalPath, projectPath, universal]
+const AGENT_DEFINITIONS: [string, string, string, string, string, boolean][] = [
+    // Universal agents (use .agents/skills as project path)
+    ["amp", "Amp", "Amp", "~/.config/agents/skills", ".agents/skills", true],
+    ["codex", "Codex", "Codex", "~/.codex/skills", ".agents/skills", true],
+    ["copilot", "GitHub Copilot", "Copilot", "~/.copilot/skills", ".agents/skills", true],
+    ["gemini", "Gemini CLI", "Gemini", "~/.gemini/skills", ".agents/skills", true],
+    ["opencode", "OpenCode", "OpenCode", "~/.config/opencode/skills", ".agents/skills", true],
+    ["kimi", "Kimi Code CLI", "Kimi", "~/.config/agents/skills", ".agents/skills", true],
+    ["replit", "Replit", "Replit", "~/.config/agents/skills", ".agents/skills", true],
+    // Custom agents
+    ["claude", "Claude Code", "Claude", "~/.claude/skills", ".claude/skills", false],
+    ["cursor", "Cursor", "Cursor", "~/.cursor/skills", ".cursor/skills", false],
+    ["windsurf", "Windsurf", "Windsurf", "~/.codeium/windsurf/skills", ".windsurf/skills", false],
+    ["goose", "Goose", "Goose", "~/.config/goose/skills", ".goose/skills", false],
+    ["kilo", "Kilo Code", "Kilo", "~/.kilocode/skills", ".kilocode/skills", false],
+    ["roo", "Roo Code", "Roo", "~/.roo/skills", ".roo/skills", false],
+    ["antigravity", "Antigravity", "Antigrav", "~/.gemini/antigravity/skills", ".agent/skills", false],
+    ["droid", "Droid", "Droid", "~/.factory/skills", ".factory/skills", false],
+    ["pi", "pi", "pi", "~/.pi/agent/skills", ".pi/skills", false],
+    ["openclaw", "OpenClaw", "OpenClaw", "~/.openclaw/skills", "skills", false],
 ];
 
 const DEFAULT_AGENTS: Record<string, Agent> = Object.fromEntries(
-    AGENT_DEFINITIONS.map(([id, name, shortName, globalPath, projectPath]) => [
+    AGENT_DEFINITIONS.map(([id, name, shortName, globalPath, projectPath, universal]) => [
         id,
-        { id, name, shortName, globalPath, projectPath, detected: false },
+        { id, name, shortName, globalPath, projectPath, universal, detected: false },
     ]),
 );
+
+// Map old agent IDs to new ones for config migration
+const AGENT_RENAMES: Record<string, string> = {
+    clawdbot: "openclaw",
+};
 
 function createDefaultConfig(): Config {
     return {
@@ -69,15 +78,30 @@ export class ConfigStore {
     private mergeWithDefaults(parsed: Partial<Config>): Config {
         const defaults = createDefaultConfig();
 
-        // Merge agents and ensure shortName exists for each
+        // Merge agents, handling renames and ensuring shortName/universal exist
         const mergedAgents = { ...defaults.agents };
         for (const [id, agent] of Object.entries(parsed.agents ?? {})) {
-            mergedAgents[id] = {
-                ...defaults.agents[id],
-                ...agent,
-                // Ensure shortName exists, fallback to first word of name or id
-                shortName: agent.shortName ?? defaults.agents[id]?.shortName ?? agent.name?.split(" ")[0] ?? id,
+            const newId = AGENT_RENAMES[id] ?? id;
+
+            // Skip old ID if it was renamed and the new ID already has parsed data
+            if (AGENT_RENAMES[id] && parsed.agents?.[newId]) continue;
+
+            const isRenamed = id !== newId;
+            const def = defaults.agents[newId];
+            mergedAgents[newId] = {
+                ...def,
+                ...(isRenamed ? { detected: agent.detected } : agent),
+                id: newId,
+                // Defaults always win for display name and universal flag
+                name: def?.name ?? agent.name ?? newId,
+                shortName: def?.shortName ?? agent.shortName ?? agent.name?.split(" ")[0] ?? newId,
+                universal: def?.universal ?? false,
             };
+        }
+
+        // Remove stale renamed keys
+        for (const oldId of Object.keys(AGENT_RENAMES)) {
+            delete mergedAgents[oldId];
         }
 
         return {
