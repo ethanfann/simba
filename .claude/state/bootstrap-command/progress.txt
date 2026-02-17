@@ -97,3 +97,11 @@ Started: 2026-02-16
 - No `SkillsStore`, `SnapshotManager`, or git operations instantiated in dry-run path
 - Files changed: `src/commands/bootstrap.ts`
 - **Learnings:** Agent detection is read-only (just checks filesystem for agent dirs), safe to run in dry-run mode for accurate preview
+
+## Task - cli-3
+- Replaced flat per-skill logging with structured summary section
+- Per-skill: status-appropriate log levels (success/warn/error) with status and message
+- Per-agent: counts of assigned skills, skipped agents listed with reason
+- Totals line: fetched/linked/restored/existing/skipped/failed counts in outro
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `FetchResult["status"]` indexing extracts the union type from the interface — useful for `Set<>` type param instead of repeating string literals

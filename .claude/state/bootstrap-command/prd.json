@@ -139,7 +139,7 @@
         "Total restored/skipped/failed counts shown",
         "Output uses @clack/prompts consistent with other simba commands"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "test-1",

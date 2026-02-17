@@ -485,34 +485,93 @@ export default defineCommand({
     const adoptedResults = await handleAdoptedSkills(adopted, skillsStore, args.backup, { force: args.force, snapshots })
     const results = [...remoteResults, ...localResults, ...adoptedResults]
 
-    for (const r of results) {
-      p.log.step(`${r.name}: ${r.status}${r.message ? ` — ${r.message}` : ""}`)
-    }
-
     // Agent assignment: symlink skills to detected agents
-    const successStatuses = new Set(["fetched", "linked", "from-backup", "exists"])
+    const successStatuses = new Set<FetchResult["status"]>(["fetched", "linked", "from-backup", "exists"])
     const fetchedSkills = new Set(
       results.filter(r => successStatuses.has(r.status)).map(r => r.name)
     )
 
+    let assignResults: AssignResult[] = []
     if (fetchedSkills.size > 0) {
       const configStore = new ConfigStore(getConfigPath())
       const config = await configStore.load()
-      const assignResults = await assignSkillsToAgents(registry, skillsStore, fetchedSkills, config)
+      assignResults = await assignSkillsToAgents(registry, skillsStore, fetchedSkills, config)
+    }
 
-      const assigned = assignResults.filter(r => r.status === "assigned")
-      const skipped = assignResults.filter(r => r.status === "skipped")
+    // --- Summary output ---
+    p.log.step("Summary")
 
-      if (assigned.length > 0) {
-        p.log.success(`Assigned ${assigned.length} skill-agent symlink(s)`)
-      }
-      for (const r of skipped) {
-        p.log.warn(`${r.skill} → ${r.agent}: ${r.message}`)
+    // Per-skill status
+    for (const r of results) {
+      const detail = r.message ? ` — ${r.message}` : ""
+      switch (r.status) {
+        case "fetched":
+        case "linked":
+        case "from-backup":
+          p.log.success(`${r.name}: ${r.status}${detail}`)
+          break
+        case "exists":
+        case "skipped":
+        case "not-found":
+          p.log.warn(`${r.name}: ${r.status}${detail}`)
+          break
+        case "failed":
+          p.log.error(`${r.name}: ${r.status}${detail}`)
+          break
       }
     }
 
-    const hasFailed = results.some(r => r.status === "failed")
-    p.outro(hasFailed ? "Done (with errors)" : "Done")
+    // Agent assignment counts per detected agent
+    if (assignResults.length > 0) {
+      const perAgent = new Map<string, { assigned: number; skipped: number }>()
+      const skippedAgents = new Set<string>()
+
+      for (const r of assignResults) {
+        if (r.status === "skipped") {
+          skippedAgents.add(r.agent)
+          continue
+        }
+        const counts = perAgent.get(r.agent) ?? { assigned: 0, skipped: 0 }
+        counts.assigned++
+        perAgent.set(r.agent, counts)
+      }
+
+      if (perAgent.size > 0) {
+        const agentSummaries = [...perAgent.entries()]
+          .map(([agent, counts]) => `${agent}: ${counts.assigned} skill(s)`)
+          .join(", ")
+        p.log.success(`Agent assignments — ${agentSummaries}`)
+      }
+
+      if (skippedAgents.size > 0) {
+        p.log.warn(`Skipped agents (not detected): ${[...skippedAgents].join(", ")}`)
+      }
+    }
+
+    // Totals
+    const counts = { fetched: 0, linked: 0, restored: 0, exists: 0, skipped: 0, failed: 0 }
+    for (const r of results) {
+      switch (r.status) {
+        case "fetched": counts.fetched++; break
+        case "linked": counts.linked++; break
+        case "from-backup": counts.restored++; break
+        case "exists": counts.exists++; break
+        case "skipped":
+        case "not-found": counts.skipped++; break
+        case "failed": counts.failed++; break
+      }
+    }
+
+    const parts: string[] = []
+    if (counts.fetched > 0) parts.push(`${counts.fetched} fetched`)
+    if (counts.linked > 0) parts.push(`${counts.linked} linked`)
+    if (counts.restored > 0) parts.push(`${counts.restored} restored`)
+    if (counts.exists > 0) parts.push(`${counts.exists} existing`)
+    if (counts.skipped > 0) parts.push(`${counts.skipped} skipped`)
+    if (counts.failed > 0) parts.push(`${counts.failed} failed`)
+
+    const hasFailed = counts.failed > 0
+    p.outro(`${hasFailed ? "Done (with errors)" : "Done"} — ${parts.join(", ")}`)
     if (hasFailed) process.exit(1)
   },
 })
