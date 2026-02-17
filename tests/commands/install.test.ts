@@ -435,6 +435,25 @@ describe("installSource tracking", () => {
     expect(registry.skills["local-skill"].installSource!.skillPath).toBe("./skills/local-skill")
   })
 
+  test("local install sets skillPath to '.' for repo-as-skill", async () => {
+    // Create a root SKILL.md (no skills/ dir)
+    await writeFile(join(sourceDir, "SKILL.md"), "---\nname: root-skill\ndescription: a root skill\n---\n# Root")
+
+    const { runInstall } = await import("../../src/commands/install")
+
+    await runInstall({
+      source: sourceDir,
+      skillsDir,
+      registryPath,
+      useSSH: false,
+      onSelect: async (skills) => skills.map(s => s.name),
+    })
+
+    const registry: Registry = JSON.parse(await readFile(registryPath, "utf-8"))
+    expect(registry.skills["root-skill"]).toBeDefined()
+    expect(registry.skills["root-skill"].installSource?.skillPath).toBe(".")
+  })
+
   test("local install creates symlink instead of copy", async () => {
     const { lstat } = await import("node:fs/promises")
 
@@ -457,5 +476,119 @@ describe("installSource tracking", () => {
     const installedPath = join(skillsDir, "symlink-skill")
     const stat = await lstat(installedPath)
     expect(stat.isSymbolicLink()).toBe(true)
+  })
+})
+
+describe("repo-as-skill (root SKILL.md)", () => {
+  beforeEach(async () => {
+    await mkdir(skillsDir, { recursive: true })
+    await mkdir(sourceDir, { recursive: true })
+  })
+
+  afterEach(async () => {
+    await rm(testDir, { recursive: true, force: true })
+  })
+
+  test("discovers skill from root SKILL.md", async () => {
+    await writeFile(join(sourceDir, "SKILL.md"), "---\nname: my-root-skill\ndescription: root skill\n---\n# Root")
+
+    const { discoverSkills } = await import("../../src/commands/install")
+    const skills = await discoverSkills(sourceDir)
+
+    expect(skills.length).toBe(1)
+    expect(skills[0].name).toBe("my-root-skill")
+    expect(skills[0].description).toBe("root skill")
+  })
+
+  test("name from frontmatter", async () => {
+    await writeFile(join(sourceDir, "SKILL.md"), "---\nname: custom-name\n---\n# Skill")
+
+    const { discoverSkills } = await import("../../src/commands/install")
+    const skills = await discoverSkills(sourceDir)
+
+    expect(skills[0].name).toBe("custom-name")
+  })
+
+  test("name falls back to directory basename", async () => {
+    await writeFile(join(sourceDir, "SKILL.md"), "---\ndescription: no name field\n---\n# Skill")
+
+    const { discoverSkills } = await import("../../src/commands/install")
+    const skills = await discoverSkills(sourceDir)
+
+    // basename of sourceDir
+    expect(skills[0].name).toBe("source-repo")
+  })
+
+  test("relativePath is '.'", async () => {
+    await writeFile(join(sourceDir, "SKILL.md"), "---\nname: root-skill\n---\n# Root")
+
+    const { discoverSkills } = await import("../../src/commands/install")
+    const skills = await discoverSkills(sourceDir)
+
+    expect(skills[0].relativePath).toBe(".")
+  })
+
+  test("root SKILL.md skipped when standard dirs have skills", async () => {
+    // Create both a standard skill and a root SKILL.md
+    await createSourceSkill("nested-skill")
+    await writeFile(join(sourceDir, "SKILL.md"), "---\nname: root-skill\n---\n# Root")
+
+    const { discoverSkills } = await import("../../src/commands/install")
+    const skills = await discoverSkills(sourceDir)
+
+    // Only the nested skill should be found, root is skipped
+    expect(skills.length).toBe(1)
+    expect(skills[0].name).toBe("nested-skill")
+  })
+
+  test("installs with references/ and scripts/ subdirs", async () => {
+    // Create repo-as-skill with subdirectories
+    await writeFile(join(sourceDir, "SKILL.md"), "---\nname: full-skill\n---\n# Full")
+    await mkdir(join(sourceDir, "references"), { recursive: true })
+    await writeFile(join(sourceDir, "references", "guide.md"), "# Guide")
+    await mkdir(join(sourceDir, "scripts"), { recursive: true })
+    await writeFile(join(sourceDir, "scripts", "setup.sh"), "#!/bin/bash\necho hi")
+
+    const { runInstall } = await import("../../src/commands/install")
+
+    await runInstall({
+      source: sourceDir,
+      skillsDir,
+      registryPath,
+      useSSH: false,
+      onSelect: async (skills) => skills.map(s => s.name),
+    })
+
+    // Verify skill installed with subdirs
+    const installed = await readdir(skillsDir)
+    expect(installed).toContain("full-skill")
+
+    const skillFiles = await readdir(join(skillsDir, "full-skill"))
+    expect(skillFiles).toContain("SKILL.md")
+    expect(skillFiles).toContain("references")
+    expect(skillFiles).toContain("scripts")
+
+    // Verify subdir contents
+    const refs = await readdir(join(skillsDir, "full-skill", "references"))
+    expect(refs).toContain("guide.md")
+    const scripts = await readdir(join(skillsDir, "full-skill", "scripts"))
+    expect(scripts).toContain("setup.sh")
+  })
+
+  test("installSource.skillPath is '.' in registry", async () => {
+    await writeFile(join(sourceDir, "SKILL.md"), "---\nname: tracked-root\n---\n# Root")
+
+    const { runInstall } = await import("../../src/commands/install")
+
+    await runInstall({
+      source: sourceDir,
+      skillsDir,
+      registryPath,
+      useSSH: false,
+      onSelect: async (skills) => skills.map(s => s.name),
+    })
+
+    const registry: Registry = JSON.parse(await readFile(registryPath, "utf-8"))
+    expect(registry.skills["tracked-root"].installSource?.skillPath).toBe(".")
   })
 })

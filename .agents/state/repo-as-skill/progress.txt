@@ -20,3 +20,20 @@ Started: 2026-02-16
 - Fixed relativePath to return `"."` instead of `"./"` for root skills
 - Files changed: `src/commands/install.ts`
 - **Learnings:** `relative(a, a)` returns `""` not `"."` — needed explicit empty-string check
+
+## Task - functional-2
+- No code changes needed — existing `runInstall` flow already handles root skills
+- `addSkill` recursive cp copies all subdirs (references/, scripts/, etc.)
+- `installSource.skillPath` gets `"."` from `skill.relativePath`
+- Verified via tests in testing-1
+
+## Task - functional-3
+- No code changes needed — `update.ts` calls `discoverSkills()` and matches on `relativePath`
+- `discoveredByPath.get(".")` correctly matches root skills
+- Verified by code review of update.ts:147-165
+
+## Task - testing-1
+- Added 8 new tests in `tests/commands/install.test.ts`
+- Tests: root discovery, frontmatter name, basename fallback, relativePath, dedup guard, subdir copy, installSource.skillPath
+- All 26 tests pass (18 existing + 8 new)
+- Files changed: `tests/commands/install.test.ts`
