@@ -8,6 +8,7 @@ Started: 2026-02-16
 - Subcommands lazy-loaded via `() => import("./commands/x").then(m => m.default)`
 - Positional args use `required: false` when optional
 - State dir lives at `.claude/state/` not `.agents/state/`
+- Use type guard functions (`is` predicates) to narrow optional fields instead of `as Type` assertions
 
 ---
 
@@ -16,3 +17,19 @@ Started: 2026-02-16
 - Created `src/commands/bootstrap.ts` with positional `registryPath`, `--backup`, `--force`, `--ssh`, `--dryRun`/`-n`
 - Files changed: `src/index.ts`, `src/commands/bootstrap.ts` (new)
 - **Learnings:** citty renders camelCase args as `--camelCase` in help output (e.g. `--dryRun`), consistent with other simba commands
+
+## Task - core-1
+- Load registry from positional arg or default XDG path via `getRegistryPath()`
+- Partition skills into `installable` (has `installSource`) vs `adopted` (no `installSource`)
+- Empty registry exits cleanly with `p.log.info` message
+- Exported `partitionSkills()` as pure function for testability
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `RegistryStore.load()` returns empty registry on ENOENT, so "empty" check is on `Object.entries(registry.skills).length`
+
+## Task - core-2
+- Added `RepoGroup` interface and `groupByRepo()` pure function
+- Groups `InstallableSkill[]` by `installSource.repo`, separates into `remote` and `local`
+- Refined `InstallableSkill.skill` type to guarantee `installSource` via type guard `hasInstallSource()`
+- Wired into `run()` with summary logging of repo/skill counts
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** Use type guard (`is` predicate) to narrow `installSource` from optional to required, avoids `as Type` assertion

@@ -26,7 +26,7 @@
         "Skills without installSource are classified as adopted",
         "Empty registry produces clean exit with message"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "core-2",
@@ -38,7 +38,7 @@
         "Each group contains skill names and their skillPath within the repo",
         "Grouping handles both GitHub shorthand and full URLs"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "core-3",
