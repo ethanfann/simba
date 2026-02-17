@@ -1,6 +1,6 @@
 import { defineCommand } from "citty"
 import { readdir, access, readFile } from "node:fs/promises"
-import { join, relative, resolve } from "node:path"
+import { basename, join, relative, resolve } from "node:path"
 import * as p from "@clack/prompts"
 import matter from "gray-matter"
 import simpleGit from "simple-git"
@@ -268,9 +268,30 @@ export async function discoverSkills(basePath: string): Promise<DiscoveredSkill[
     }
   }
 
+  // Check if repo root itself is a skill (has SKILL.md at basePath)
+  // Only if no skills found via other strategies (prevents double-counting)
+  if (skills.length === 0) {
+    try {
+      const rootSkillMd = join(basePath, "SKILL.md")
+      await access(rootSkillMd)
+      const content = await readFile(rootSkillMd, "utf-8")
+      const { data } = matter(content)
+      const name = data.name || basename(basePath)
+
+      skills.push({
+        name,
+        path: basePath,
+        description: data.description,
+      })
+    } catch {
+      // No SKILL.md at root
+    }
+  }
+
   // Compute relativePath for each skill
   for (const skill of skills) {
-    skill.relativePath = "./" + relative(basePath, skill.path)
+    const rel = relative(basePath, skill.path)
+    skill.relativePath = rel === "" ? "." : "./" + rel
   }
 
   return skills
