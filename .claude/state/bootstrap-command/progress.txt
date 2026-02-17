@@ -33,3 +33,19 @@ Started: 2026-02-16
 - Wired into `run()` with summary logging of repo/skill counts
 - Files changed: `src/commands/bootstrap.ts`
 - **Learnings:** Use type guard (`is` predicate) to narrow `installSource` from optional to required, avoids `as Type` assertion
+
+## Task - core-3
+- Implemented `resolveGitUrl()` to build clone URLs from repo string + protocol, with `--ssh` override
+- Implemented `locateSkillInClone()` — resolves `skillPath` directly if available, falls back to `discoverSkills()` scan
+- Implemented `fetchRemoteRepos()` — iterates repo groups, clones each to temp dir (depth=1), extracts skills via `skillsStore.addSkill()`, cleans up
+- Wired into `run()` with per-skill status logging via `@clack/prompts`
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `resolve(cloneDir, skillPath)` correctly handles both `./relative` and bare paths; reusing `discoverSkills()` from install.ts for fallback avoids duplicating scan logic
+
+## Task - core-4
+- Implemented `fetchLocalRepos()` — verifies local path exists via `access()`, symlinks skills via `skillsStore.linkSkill()`
+- Missing paths skip all skills in that group with `"skipped"` status and descriptive message naming the path
+- Added `"linked"` and `"skipped"` to `FetchResult.status` union
+- Wired into `run()`: local results merged with remote results for unified summary output
+- Files changed: `src/commands/bootstrap.ts`
+- **Learnings:** `locateSkillInClone()` works identically for local paths — no clone needed, just pass the repo path directly

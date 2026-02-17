@@ -52,7 +52,7 @@
         "installSource.protocol is respected (https vs ssh)",
         "--ssh flag overrides protocol to ssh for all remote repos"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "core-4",
@@ -64,7 +64,7 @@
         "Warning message names the skill and the missing path",
         "Skipped local skills are included in final summary"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "core-5",

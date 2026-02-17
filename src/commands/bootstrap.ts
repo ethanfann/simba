@@ -78,7 +78,7 @@ export function resolveGitUrl(repo: string, protocol: InstallSource["protocol"],
 
 export interface FetchResult {
   name: string
-  status: "fetched" | "failed" | "not-found"
+  status: "fetched" | "linked" | "failed" | "not-found" | "skipped"
   message?: string
 }
 
@@ -139,6 +139,40 @@ export async function fetchRemoteRepos(
       }
     } finally {
       await rm(tempDir, { recursive: true, force: true })
+    }
+  }
+
+  return results
+}
+
+/** Verify local repo paths exist and symlink skills into central store */
+export async function fetchLocalRepos(
+  groups: RepoGroup[],
+  skillsStore: SkillsStore
+): Promise<FetchResult[]> {
+  const results: FetchResult[] = []
+
+  for (const group of groups) {
+    const repoPath = group.repo
+
+    try {
+      await access(repoPath)
+    } catch {
+      for (const { name } of group.skills) {
+        results.push({ name, status: "skipped", message: `local path not found: ${repoPath}` })
+      }
+      continue
+    }
+
+    for (const { name, skillPath } of group.skills) {
+      const skillDir = await locateSkillInClone(repoPath, name, skillPath)
+      if (skillDir === undefined) {
+        results.push({ name, status: "not-found", message: `not found in ${repoPath}` })
+        continue
+      }
+
+      await skillsStore.linkSkill(name, skillDir)
+      results.push({ name, status: "linked" })
     }
   }
 
@@ -230,14 +264,15 @@ export default defineCommand({
 
     const skillsStore = new SkillsStore(getSkillsDir(), registryPath)
 
-    const results = await fetchRemoteRepos(remote, skillsStore, { ssh: args.ssh })
+    const remoteResults = await fetchRemoteRepos(remote, skillsStore, { ssh: args.ssh })
+    const localResults = await fetchLocalRepos(local, skillsStore)
+    const results = [...remoteResults, ...localResults]
 
     for (const r of results) {
       p.log.step(`${r.name}: ${r.status}${r.message ? ` — ${r.message}` : ""}`)
     }
 
-    // Subsequent tasks will handle local repos, adopted skills, agent symlinks, etc.
+    // Subsequent tasks will handle adopted skills, agent symlinks, etc.
     void args
-    void local
   },
 })
