@@ -67,6 +67,15 @@ describe("ConfigStore", () => {
     }
   })
 
+  test("detectPath uses CLI-owned locations for universal agents", async () => {
+    const store = new ConfigStore(configPath)
+    const config = await store.load()
+
+    expect(config.agents.amp.detectPath).toBe("~/.config/amp")
+    expect(config.agents.kimi.detectPath).toBe("~/.kimi")
+    expect(config.agents.replit.detectPath).toBe(".replit")
+  })
+
   test("migrates clawdbot to openclaw", async () => {
     const toml = `[agents.clawdbot]
 detected = true

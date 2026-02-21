@@ -349,6 +349,28 @@ export interface AssignResult {
   message?: string
 }
 
+function resolveAssignmentPath(
+  agentId: string,
+  detected: Record<string, import("../core/types").Agent>
+): string | null {
+  const agent = detected[agentId]
+  if (!agent) return null
+
+  if (agent.detected) {
+    return expandPath(agent.globalPath)
+  }
+
+  if (!agent.universal) {
+    return null
+  }
+
+  const fallback = Object.values(detected).find(
+    (candidate) => candidate.universal && candidate.detected && candidate.projectPath === agent.projectPath
+  )
+
+  return fallback ? expandPath(fallback.globalPath) : null
+}
+
 /** Detect agents and create symlinks for each skill's assignments */
 export async function assignSkillsToAgents(
   registry: { skills: Record<string, ManagedSkill> },
@@ -366,14 +388,13 @@ export async function assignSkillsToAgents(
 
     const assignments = skill.assignments
     for (const [agentId, assignment] of Object.entries(assignments)) {
-      const agent = detected[agentId]
-      if (!agent?.detected) {
+      const assignmentPath = resolveAssignmentPath(agentId, detected)
+      if (!assignmentPath) {
         results.push({ skill: skillName, agent: agentId, status: "skipped", message: "agent not detected" })
         continue
       }
 
-      const agentSkillsDir = expandPath(agent.globalPath)
-      await skillsStore.assignSkill(skillName, agentSkillsDir, assignment)
+      await skillsStore.assignSkill(skillName, assignmentPath, assignment)
       results.push({ skill: skillName, agent: agentId, status: "assigned" })
     }
   }

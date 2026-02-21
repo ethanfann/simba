@@ -108,32 +108,11 @@ simba undo
 
 ## Supported Agents
 
-### Universal (`.agents/skills`)
+Supports Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot, Amp, Kimi Code CLI, Replit, and 30+ others.
 
-| Agent | Global Path | Project Path |
-|-------|-------------|--------------|
-| Amp | `~/.config/agents/skills` | `.agents/skills` |
-| Codex | `~/.codex/skills` | `.agents/skills` |
-| GitHub Copilot | `~/.copilot/skills` | `.agents/skills` |
-| Gemini CLI | `~/.gemini/skills` | `.agents/skills` |
-| OpenCode | `~/.config/opencode/skills` | `.agents/skills` |
-| Kimi Code CLI | `~/.config/agents/skills` | `.agents/skills` |
-| Replit | `~/.config/agents/skills` | `.agents/skills` |
+Includes agents using the `.agents/skills` universal standard, plus agent-specific paths.
 
-### Custom
-
-| Agent | Global Path | Project Path |
-|-------|-------------|--------------|
-| Claude Code | `~/.claude/skills` | `.claude/skills` |
-| Cursor | `~/.cursor/skills` | `.cursor/skills` |
-| Windsurf | `~/.codeium/windsurf/skills` | `.windsurf/skills` |
-| Goose | `~/.config/goose/skills` | `.goose/skills` |
-| Kilo Code | `~/.kilocode/skills` | `.kilocode/skills` |
-| Roo Code | `~/.roo/skills` | `.roo/skills` |
-| Antigravity | `~/.gemini/antigravity/skills` | `.agent/skills` |
-| Droid | `~/.factory/skills` | `.factory/skills` |
-| pi | `~/.pi/agent/skills` | `.pi/skills` |
-| OpenClaw | `~/.openclaw/skills` | `skills` |
+See full agent definitions and paths in [`src/core/config-store.ts`](./src/core/config-store.ts).
 
 ## Architecture
 

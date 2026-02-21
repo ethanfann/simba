@@ -1,5 +1,5 @@
 import { test, expect, describe, beforeEach, afterEach } from "bun:test"
-import { mkdir, rm, readFile } from "node:fs/promises"
+import { mkdir, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import { RegistryStore } from "../../src/core/registry-store"
@@ -39,5 +39,54 @@ describe("RegistryStore", () => {
     await store.save(registry)
     const loaded = await store.load()
     expect(loaded).toEqual(registry)
+  })
+
+  test("load migrates clawdbot assignments to openclaw", async () => {
+    const legacyRegistry = {
+      version: 1,
+      skills: {
+        "legacy-skill": {
+          name: "legacy-skill",
+          source: "adopted:clawdbot",
+          installedAt: "2026-01-16T00:00:00Z",
+          assignments: {
+            clawdbot: { type: "directory" },
+          }
+        }
+      }
+    }
+
+    await writeFile(registryPath, JSON.stringify(legacyRegistry, null, 2))
+
+    const store = new RegistryStore(registryPath)
+    const loaded = await store.load()
+
+    expect(loaded.skills["legacy-skill"].assignments.clawdbot).toBeUndefined()
+    expect(loaded.skills["legacy-skill"].assignments.openclaw).toEqual({ type: "directory" })
+  })
+
+  test("load preserves explicit openclaw assignment when legacy key also exists", async () => {
+    const mixedRegistry = {
+      version: 1,
+      skills: {
+        "legacy-skill": {
+          name: "legacy-skill",
+          source: "adopted:clawdbot",
+          installedAt: "2026-01-16T00:00:00Z",
+          assignments: {
+            clawdbot: { type: "directory" },
+            openclaw: { type: "file", target: "rule.mdc" },
+          }
+        }
+      }
+    }
+
+    await writeFile(registryPath, JSON.stringify(mixedRegistry, null, 2))
+
+    const store = new RegistryStore(registryPath)
+    const loaded = await store.load()
+
+    expect(loaded.skills["legacy-skill"].assignments.openclaw).toEqual({ type: "file", target: "rule.mdc" })
+    expect(loaded.skills["legacy-skill"].assignments.clawdbot).toBeUndefined()
   })
 })

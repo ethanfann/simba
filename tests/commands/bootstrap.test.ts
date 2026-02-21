@@ -5,13 +5,14 @@ import { tmpdir } from "node:os"
 import * as tar from "tar"
 import { SkillsStore } from "../../src/core/skills-store"
 import { SnapshotManager } from "../../src/core/snapshot"
-import type { ManagedSkill, InstallSource } from "../../src/core/types"
+import type { ManagedSkill, InstallSource, Agent } from "../../src/core/types"
 import {
   partitionSkills,
   groupByRepo,
   resolveGitUrl,
   fetchLocalRepos,
   handleAdoptedSkills,
+  assignSkillsToAgents,
   type InstallableSkill,
   type RepoGroup,
 } from "../../src/commands/bootstrap"
@@ -366,6 +367,55 @@ describe("bootstrap", () => {
       const good = results.find(r => r.name === "good-skill")
       expect(bad?.status).toBe("skipped")
       expect(good?.status).toBe("linked")
+    })
+  })
+
+  describe("assignSkillsToAgents", () => {
+    test("uses universal fallback path when assigned universal agent is not detected", async () => {
+      await createSkillDir(skillsDir, "shared-skill")
+
+      const registry = {
+        skills: {
+          "shared-skill": makeManagedSkill({
+            name: "shared-skill",
+            assignments: {
+              replit: { type: "directory" },
+            },
+          }),
+        },
+      }
+
+      const agents: Record<string, Agent> = {
+        amp: {
+          id: "amp",
+          name: "Amp",
+          shortName: "Amp",
+          globalPath: join(testDir, ".config/agents/skills"),
+          projectPath: ".agents/skills",
+          universal: true,
+          detected: true,
+        },
+        replit: {
+          id: "replit",
+          name: "Replit",
+          shortName: "Replit",
+          globalPath: join(testDir, ".config/agents/skills"),
+          projectPath: ".agents/skills",
+          universal: true,
+          detected: false,
+        },
+      }
+
+      await mkdir(join(testDir, ".config/agents"), { recursive: true })
+
+      const store = new SkillsStore(skillsDir, registryPath)
+      const results = await assignSkillsToAgents(registry, store, new Set(["shared-skill"]), { agents })
+
+      expect(results).toHaveLength(1)
+      expect(results[0].status).toBe("assigned")
+
+      const assigned = await readFile(join(testDir, ".config/agents/skills", "shared-skill", "SKILL.md"), "utf-8")
+      expect(assigned).toContain("# shared-skill")
     })
   })
 })

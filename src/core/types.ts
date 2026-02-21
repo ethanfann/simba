@@ -6,6 +6,8 @@ export interface Agent {
   shortName: string // Short display name for matrix views (max 8 chars)
   globalPath: string
   projectPath: string
+  detectPath?: string // CLI-owned config path used for installation detection
+  detectPaths?: string[] // Multiple detection markers; detected when any path exists
   universal: boolean // Uses .agents/skills as project path
   detected: boolean
 }
