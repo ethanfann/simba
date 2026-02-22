@@ -56,12 +56,31 @@ export default defineCommand({
     // Get detected agents
     const agentRegistry = new AgentRegistry(config.agents)
     const detected = await agentRegistry.detectAgents()
-    const detectedAgents = Object.entries(detected).filter(([, a]) => a.detected)
+
+    const universalFallbackByProjectPath = new Map<string, string>()
+    for (const agent of Object.values(detected)) {
+      if (!agent.universal || !agent.detected) continue
+      if (!universalFallbackByProjectPath.has(agent.projectPath)) {
+        universalFallbackByProjectPath.set(agent.projectPath, expandPath(agent.globalPath))
+      }
+    }
 
     const agentPaths: Record<string, string> = {}
-    for (const [id, agent] of detectedAgents) {
-      agentPaths[id] = expandPath(agent.globalPath)
+    for (const [id, agent] of Object.entries(detected)) {
+      if (agent.detected) {
+        agentPaths[id] = expandPath(agent.globalPath)
+        continue
+      }
+
+      if (agent.universal) {
+        const fallback = universalFallbackByProjectPath.get(agent.projectPath)
+        if (fallback) {
+          agentPaths[id] = fallback
+        }
+      }
     }
+
+    const assignableAgents = Object.entries(detected).filter(([id]) => agentPaths[id])
 
     // Interactive mode if args missing
     let skill = args.skill as string | undefined
@@ -83,14 +102,14 @@ export default defineCommand({
     }
 
     if (!args.agents) {
-      if (detectedAgents.length === 0) {
+      if (assignableAgents.length === 0) {
         console.log("No agents detected.")
         return
       }
 
       const result = await p.multiselect({
         message: "Select agents to assign to",
-        options: detectedAgents.map(([id, a]) => ({ value: id, label: a.name })),
+        options: assignableAgents.map(([id, a]) => ({ value: id, label: a.name })),
         required: true,
       })
       if (p.isCancel(result)) process.exit(0)

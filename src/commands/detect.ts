@@ -51,9 +51,18 @@ export default defineCommand({
 
     await configStore.save(config)
 
-    // Output results
-    console.log("\nDetected agents:")
-    for (const [id, agent] of Object.entries(detected)) {
+    // Output results grouped by universal/custom
+    const universal = Object.values(detected).filter(a => a.universal)
+    const custom = Object.values(detected).filter(a => !a.universal)
+
+    console.log("\nUniversal (.agents/skills):")
+    for (const agent of universal) {
+      const status = agent.detected ? "✓" : "─"
+      console.log(`  ${status} ${agent.name}`)
+    }
+
+    console.log("\nCustom:")
+    for (const agent of custom) {
       const status = agent.detected ? "✓" : "─"
       console.log(`  ${status} ${agent.name}`)
     }

@@ -11,15 +11,20 @@ export class AgentRegistry {
     const results: Record<string, Agent> = {}
 
     for (const [id, agent] of Object.entries(this.agents)) {
-      const globalPath = expandPath(agent.globalPath)
-      const parentDir = dirname(globalPath)
+      const configuredPaths = agent.detectPaths && agent.detectPaths.length > 0
+        ? agent.detectPaths
+        : [agent.detectPath ?? dirname(agent.globalPath)]
 
       let detected = false
-      try {
-        await access(parentDir)
-        detected = true
-      } catch {
-        detected = false
+      for (const path of configuredPaths) {
+        const detectionPath = expandPath(path)
+        try {
+          await access(detectionPath)
+          detected = true
+          break
+        } catch {
+          continue
+        }
       }
 
       results[id] = { ...agent, detected }

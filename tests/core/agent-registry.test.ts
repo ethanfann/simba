@@ -19,6 +19,7 @@ describe("AgentRegistry", () => {
         shortName: "Test",
         globalPath: join(tempDir, ".testagent/skills"),
         projectPath: ".testagent/skills",
+        universal: false,
         detected: false,
       },
     }
@@ -43,6 +44,41 @@ describe("AgentRegistry", () => {
     const detected = await registry.detectAgents()
 
     expect(detected.testagent.detected).toBe(false)
+  })
+
+  test("detectAgents uses detectPath instead of shared skills path", async () => {
+    const sharedGlobalPath = join(tempDir, ".config/agents/skills")
+    await mkdir(join(tempDir, ".config/agents"), { recursive: true })
+    await mkdir(join(tempDir, "only-amp-config"), { recursive: true })
+
+    const agents: Record<string, Agent> = {
+      amp: {
+        id: "amp",
+        name: "Amp",
+        shortName: "Amp",
+        globalPath: sharedGlobalPath,
+        projectPath: ".agents/skills",
+        detectPath: join(tempDir, "only-amp-config"),
+        universal: true,
+        detected: false,
+      },
+      kimi: {
+        id: "kimi",
+        name: "Kimi",
+        shortName: "Kimi",
+        globalPath: sharedGlobalPath,
+        projectPath: ".agents/skills",
+        detectPath: join(tempDir, "missing-kimi-config"),
+        universal: true,
+        detected: false,
+      },
+    }
+
+    const registry = new AgentRegistry(agents)
+    const detected = await registry.detectAgents()
+
+    expect(detected.amp.detected).toBe(true)
+    expect(detected.kimi.detected).toBe(false)
   })
 
   test("listSkills returns skills in agent directory", async () => {
