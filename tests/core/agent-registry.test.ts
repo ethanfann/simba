@@ -19,7 +19,6 @@ describe("AgentRegistry", () => {
         shortName: "Test",
         globalPath: join(tempDir, ".testagent/skills"),
         projectPath: ".testagent/skills",
-        universal: false,
         detected: false,
       },
     }
@@ -59,7 +58,6 @@ describe("AgentRegistry", () => {
         globalPath: sharedGlobalPath,
         projectPath: ".agents/skills",
         detectPath: join(tempDir, "only-amp-config"),
-        universal: true,
         detected: false,
       },
       kimi: {
@@ -69,7 +67,6 @@ describe("AgentRegistry", () => {
         globalPath: sharedGlobalPath,
         projectPath: ".agents/skills",
         detectPath: join(tempDir, "missing-kimi-config"),
-        universal: true,
         detected: false,
       },
     }

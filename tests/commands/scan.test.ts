@@ -28,7 +28,7 @@ describe("adopt command", () => {
   test("adopts skills from agent into store", async () => {
     await createSkill(claudeDir, "my-skill", "# My Skill")
 
-    const { runAdopt } = await import("../../src/commands/adopt")
+    const { runAdopt } = await import("../../src/commands/scan")
 
     await runAdopt({
       skillsDir,
@@ -41,7 +41,7 @@ describe("adopt command", () => {
           shortName: "Claude",
           globalPath: claudeDir,
           projectPath: ".claude/skills",
-          universal: false,
+
           detected: true,
         }
       },

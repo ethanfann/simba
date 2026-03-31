@@ -355,20 +355,7 @@ function resolveAssignmentPath(
 ): string | null {
   const agent = detected[agentId]
   if (!agent) return null
-
-  if (agent.detected) {
-    return expandPath(agent.globalPath)
-  }
-
-  if (!agent.universal) {
-    return null
-  }
-
-  const fallback = Object.values(detected).find(
-    (candidate) => candidate.universal && candidate.detected && candidate.projectPath === agent.projectPath
-  )
-
-  return fallback ? expandPath(fallback.globalPath) : null
+  return agent.detected ? expandPath(agent.globalPath) : null
 }
 
 /** Detect agents and create symlinks for each skill's assignments */

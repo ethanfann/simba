@@ -31,7 +31,7 @@ function createTestConfig(overrides: Partial<{
         shortName: "Claude",
         globalPath: claudeSkillsDir,
         projectPath: ".claude/skills",
-        universal: false,
+
         detected: claudeDetected,
       },
       cursor: {
@@ -40,7 +40,7 @@ function createTestConfig(overrides: Partial<{
         shortName: "Cursor",
         globalPath: cursorSkillsDir,
         projectPath: ".cursor/skills",
-        universal: false,
+
         detected: cursorDetected,
       },
     },
