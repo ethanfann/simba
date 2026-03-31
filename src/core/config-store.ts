@@ -11,11 +11,9 @@ interface AgentDefinition {
     projectPath: string;
     detectPath?: string;
     detectPaths?: string[];
-    universal: boolean;
 }
 
 const AGENT_DEFINITIONS: AgentDefinition[] = [
-    // Universal agents (use .agents/skills as project path)
     {
         id: "amp",
         name: "Amp",
@@ -23,7 +21,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.config/agents/skills",
         projectPath: ".agents/skills",
         detectPath: "~/.config/amp",
-        universal: true,
+
     },
     {
         id: "codex",
@@ -32,7 +30,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.codex/skills",
         projectPath: ".agents/skills",
         detectPath: "~/.codex",
-        universal: true,
+
     },
     {
         id: "copilot",
@@ -41,7 +39,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.copilot/skills",
         projectPath: ".agents/skills",
         detectPath: "~/.copilot",
-        universal: true,
+
     },
     {
         id: "gemini",
@@ -50,7 +48,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.gemini/skills",
         projectPath: ".agents/skills",
         detectPath: "~/.gemini",
-        universal: true,
+
     },
     {
         id: "opencode",
@@ -59,7 +57,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.config/opencode/skills",
         projectPath: ".agents/skills",
         detectPath: "~/.config/opencode",
-        universal: true,
+
     },
     {
         id: "kimi",
@@ -68,7 +66,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.config/agents/skills",
         projectPath: ".agents/skills",
         detectPath: "~/.kimi",
-        universal: true,
+
     },
     {
         id: "replit",
@@ -77,10 +75,9 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.config/agents/skills",
         projectPath: ".agents/skills",
         detectPath: ".replit",
-        universal: true,
+
     },
 
-    // Custom agents
     {
         id: "claude",
         name: "Claude Code",
@@ -88,7 +85,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.claude/skills",
         projectPath: ".claude/skills",
         detectPath: "~/.claude",
-        universal: false,
+
     },
     {
         id: "cursor",
@@ -97,7 +94,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.cursor/skills",
         projectPath: ".cursor/skills",
         detectPath: "~/.cursor",
-        universal: false,
+
     },
     {
         id: "windsurf",
@@ -106,7 +103,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.codeium/windsurf/skills",
         projectPath: ".windsurf/skills",
         detectPath: "~/.codeium/windsurf",
-        universal: false,
+
     },
     {
         id: "goose",
@@ -115,7 +112,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.config/goose/skills",
         projectPath: ".goose/skills",
         detectPath: "~/.config/goose",
-        universal: false,
+
     },
     {
         id: "kilo",
@@ -124,7 +121,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.kilocode/skills",
         projectPath: ".kilocode/skills",
         detectPath: "~/.kilocode",
-        universal: false,
+
     },
     {
         id: "roo",
@@ -133,7 +130,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.roo/skills",
         projectPath: ".roo/skills",
         detectPath: "~/.roo",
-        universal: false,
+
     },
     {
         id: "antigravity",
@@ -142,7 +139,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.gemini/antigravity/skills",
         projectPath: ".agent/skills",
         detectPath: "~/.gemini/antigravity",
-        universal: false,
+
     },
     {
         id: "droid",
@@ -151,7 +148,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.factory/skills",
         projectPath: ".factory/skills",
         detectPath: "~/.factory",
-        universal: false,
+
     },
     {
         id: "pi",
@@ -160,7 +157,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.pi/agent/skills",
         projectPath: ".pi/skills",
         detectPath: "~/.pi/agent",
-        universal: false,
+
     },
     {
         id: "openclaw",
@@ -169,7 +166,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.openclaw/skills",
         projectPath: "skills",
         detectPath: "~/.openclaw",
-        universal: false,
+
     },
     {
         id: "augment",
@@ -178,7 +175,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.augment/skills",
         projectPath: ".augment/skills",
         detectPath: "~/.augment",
-        universal: false,
+
     },
     {
         id: "cline",
@@ -187,7 +184,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.cline/skills",
         projectPath: ".cline/skills",
         detectPath: "~/.cline",
-        universal: false,
+
     },
     {
         id: "codebuddy",
@@ -196,7 +193,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.codebuddy/skills",
         projectPath: ".codebuddy/skills",
         detectPaths: [".codebuddy", "~/.codebuddy"],
-        universal: false,
+
     },
     {
         id: "commandcode",
@@ -205,7 +202,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.commandcode/skills",
         projectPath: ".commandcode/skills",
         detectPath: "~/.commandcode",
-        universal: false,
+
     },
     {
         id: "continue",
@@ -214,7 +211,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.continue/skills",
         projectPath: ".continue/skills",
         detectPaths: [".continue", "~/.continue"],
-        universal: false,
+
     },
     {
         id: "cortex",
@@ -223,7 +220,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.snowflake/cortex/skills",
         projectPath: ".cortex/skills",
         detectPath: "~/.snowflake/cortex",
-        universal: false,
+
     },
     {
         id: "crush",
@@ -232,7 +229,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.config/crush/skills",
         projectPath: ".crush/skills",
         detectPath: "~/.config/crush",
-        universal: false,
+
     },
     {
         id: "junie",
@@ -241,7 +238,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.junie/skills",
         projectPath: ".junie/skills",
         detectPath: "~/.junie",
-        universal: false,
+
     },
     {
         id: "iflow",
@@ -250,7 +247,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.iflow/skills",
         projectPath: ".iflow/skills",
         detectPath: "~/.iflow",
-        universal: false,
+
     },
     {
         id: "kiro",
@@ -259,7 +256,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.kiro/skills",
         projectPath: ".kiro/skills",
         detectPath: "~/.kiro",
-        universal: false,
+
     },
     {
         id: "kode",
@@ -268,7 +265,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.kode/skills",
         projectPath: ".kode/skills",
         detectPath: "~/.kode",
-        universal: false,
+
     },
     {
         id: "mcpjam",
@@ -277,7 +274,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.mcpjam/skills",
         projectPath: ".mcpjam/skills",
         detectPath: "~/.mcpjam",
-        universal: false,
+
     },
     {
         id: "mistralvibe",
@@ -286,7 +283,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.vibe/skills",
         projectPath: ".vibe/skills",
         detectPath: "~/.vibe",
-        universal: false,
+
     },
     {
         id: "mux",
@@ -295,7 +292,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.mux/skills",
         projectPath: ".mux/skills",
         detectPath: "~/.mux",
-        universal: false,
+
     },
     {
         id: "openhands",
@@ -304,7 +301,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.openhands/skills",
         projectPath: ".openhands/skills",
         detectPath: "~/.openhands",
-        universal: false,
+
     },
     {
         id: "qoder",
@@ -313,7 +310,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.qoder/skills",
         projectPath: ".qoder/skills",
         detectPath: "~/.qoder",
-        universal: false,
+
     },
     {
         id: "qwen",
@@ -322,7 +319,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.qwen/skills",
         projectPath: ".qwen/skills",
         detectPath: "~/.qwen",
-        universal: false,
+
     },
     {
         id: "trae",
@@ -331,7 +328,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.trae/skills",
         projectPath: ".trae/skills",
         detectPath: "~/.trae",
-        universal: false,
+
     },
     {
         id: "traecn",
@@ -340,7 +337,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.trae-cn/skills",
         projectPath: ".trae/skills",
         detectPath: "~/.trae-cn",
-        universal: false,
+
     },
     {
         id: "zencoder",
@@ -349,7 +346,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.zencoder/skills",
         projectPath: ".zencoder/skills",
         detectPath: "~/.zencoder",
-        universal: false,
+
     },
     {
         id: "neovate",
@@ -358,7 +355,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.neovate/skills",
         projectPath: ".neovate/skills",
         detectPath: "~/.neovate",
-        universal: false,
+
     },
     {
         id: "pochi",
@@ -367,7 +364,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.pochi/skills",
         projectPath: ".pochi/skills",
         detectPath: "~/.pochi",
-        universal: false,
+
     },
     {
         id: "adal",
@@ -376,7 +373,7 @@ const AGENT_DEFINITIONS: AgentDefinition[] = [
         globalPath: "~/.adal/skills",
         projectPath: ".adal/skills",
         detectPath: "~/.adal",
-        universal: false,
+
     },
 ];
 
@@ -391,7 +388,6 @@ const DEFAULT_AGENTS: Record<string, Agent> = Object.fromEntries(
             projectPath: definition.projectPath,
             detectPath: definition.detectPath,
             detectPaths: definition.detectPaths,
-            universal: definition.universal,
             detected: false,
         },
     ]),
@@ -442,7 +438,7 @@ export class ConfigStore {
     private mergeWithDefaults(parsed: Partial<Config>): Config {
         const defaults = createDefaultConfig();
 
-        // Merge agents, handling renames and ensuring shortName/universal exist
+        // Merge agents, handling renames and ensuring shortName exists
         const mergedAgents = { ...defaults.agents };
         for (const [id, agent] of Object.entries(parsed.agents ?? {})) {
             const newId = AGENT_RENAMES[id] ?? id;
@@ -456,12 +452,11 @@ export class ConfigStore {
                 ...def,
                 ...(isRenamed ? { detected: agent.detected } : agent),
                 id: newId,
-                // Defaults always win for display name and universal flag
+                // Defaults always win for display name
                 name: def?.name ?? agent.name ?? newId,
                 shortName: def?.shortName ?? agent.shortName ?? agent.name?.split(" ")[0] ?? newId,
                 detectPath: def?.detectPath ?? agent.detectPath,
                 detectPaths: def?.detectPaths ?? agent.detectPaths,
-                universal: def?.universal ?? false,
             };
         }
 

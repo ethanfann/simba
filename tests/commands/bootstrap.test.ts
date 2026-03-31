@@ -371,7 +371,7 @@ describe("bootstrap", () => {
   })
 
   describe("assignSkillsToAgents", () => {
-    test("uses universal fallback path when assigned universal agent is not detected", async () => {
+    test("skips undetected agents", async () => {
       await createSkillDir(skillsDir, "shared-skill")
 
       const registry = {
@@ -392,7 +392,6 @@ describe("bootstrap", () => {
           shortName: "Amp",
           globalPath: join(testDir, ".config/agents/skills"),
           projectPath: ".agents/skills",
-          universal: true,
           detected: true,
         },
         replit: {
@@ -401,21 +400,16 @@ describe("bootstrap", () => {
           shortName: "Replit",
           globalPath: join(testDir, ".config/agents/skills"),
           projectPath: ".agents/skills",
-          universal: true,
           detected: false,
         },
       }
 
-      await mkdir(join(testDir, ".config/agents"), { recursive: true })
-
       const store = new SkillsStore(skillsDir, registryPath)
       const results = await assignSkillsToAgents(registry, store, new Set(["shared-skill"]), { agents })
 
+      // replit is not detected, so the assignment is skipped
       expect(results).toHaveLength(1)
-      expect(results[0].status).toBe("assigned")
-
-      const assigned = await readFile(join(testDir, ".config/agents/skills", "shared-skill", "SKILL.md"), "utf-8")
-      expect(assigned).toContain("# shared-skill")
+      expect(results[0].status).toBe("skipped")
     })
   })
 })

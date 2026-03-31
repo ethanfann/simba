@@ -39,35 +39,7 @@ describe("ConfigStore", () => {
     expect(loaded.agents.claude.detected).toBe(true)
   })
 
-  test("default agents have universal flag", async () => {
-    const store = new ConfigStore(configPath)
-    const config = await store.load()
-
-    expect(config.agents.amp.universal).toBe(true)
-    expect(config.agents.codex.universal).toBe(true)
-    expect(config.agents.copilot.universal).toBe(true)
-    expect(config.agents.gemini.universal).toBe(true)
-    expect(config.agents.opencode.universal).toBe(true)
-    expect(config.agents.kimi.universal).toBe(true)
-    expect(config.agents.replit.universal).toBe(true)
-
-    expect(config.agents.claude.universal).toBe(false)
-    expect(config.agents.cursor.universal).toBe(false)
-    expect(config.agents.openclaw.universal).toBe(false)
-  })
-
-  test("universal agents have .agents/skills as projectPath", async () => {
-    const store = new ConfigStore(configPath)
-    const config = await store.load()
-
-    for (const agent of Object.values(config.agents)) {
-      if (agent.universal) {
-        expect(agent.projectPath).toBe(".agents/skills")
-      }
-    }
-  })
-
-  test("detectPath uses CLI-owned locations for universal agents", async () => {
+  test("detectPath uses CLI-owned locations for agents", async () => {
     const store = new ConfigStore(configPath)
     const config = await store.load()
 

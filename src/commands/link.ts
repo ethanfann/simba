@@ -34,14 +34,14 @@ export async function runAssign(options: AssignOptions): Promise<void> {
 
     await skillsStore.assignSkill(options.skill, agentPath, { type: "directory" })
     skill.assignments[agentId] = { type: "directory" }
-    console.log(`Assigned ${options.skill} to ${agentId}`)
+    console.log(`Linked ${options.skill} to ${agentId}`)
   }
 
   await registryStore.save(registry)
 }
 
 export default defineCommand({
-  meta: { name: "assign", description: "Assign a skill to agents" },
+  meta: { name: "link", description: "Link a skill to agents" },
   args: {
     skill: { type: "positional", description: "Skill name", required: false },
     agents: { type: "positional", description: "Agent IDs (comma-separated)", required: false },
@@ -57,26 +57,10 @@ export default defineCommand({
     const agentRegistry = new AgentRegistry(config.agents)
     const detected = await agentRegistry.detectAgents()
 
-    const universalFallbackByProjectPath = new Map<string, string>()
-    for (const agent of Object.values(detected)) {
-      if (!agent.universal || !agent.detected) continue
-      if (!universalFallbackByProjectPath.has(agent.projectPath)) {
-        universalFallbackByProjectPath.set(agent.projectPath, expandPath(agent.globalPath))
-      }
-    }
-
     const agentPaths: Record<string, string> = {}
     for (const [id, agent] of Object.entries(detected)) {
       if (agent.detected) {
         agentPaths[id] = expandPath(agent.globalPath)
-        continue
-      }
-
-      if (agent.universal) {
-        const fallback = universalFallbackByProjectPath.get(agent.projectPath)
-        if (fallback) {
-          agentPaths[id] = fallback
-        }
       }
     }
 
