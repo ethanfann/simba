@@ -41,10 +41,10 @@ export async function runAssign(options: AssignOptions): Promise<void> {
 }
 
 export default defineCommand({
-  meta: { name: "link", description: "Link a skill to agents" },
+  meta: { name: "link", description: "Link a skill to install locations" },
   args: {
     skill: { type: "positional", description: "Skill name", required: false },
-    agents: { type: "positional", description: "Agent IDs (comma-separated)", required: false },
+    agents: { type: "positional", description: "Install location IDs (comma-separated)", required: false },
   },
   async run({ args }) {
     const configStore = new ConfigStore(getConfigPath())
@@ -87,7 +87,7 @@ export default defineCommand({
 
     if (!args.agents) {
       if (assignableAgents.length === 0) {
-        console.log("No agents detected.")
+        console.log("No install locations available.")
         return
       }
 

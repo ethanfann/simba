@@ -2,6 +2,7 @@ import { defineCommand } from "citty"
 import { RegistryStore } from "../core/registry-store"
 import { SkillsStore } from "../core/skills-store"
 import { ConfigStore } from "../core/config-store"
+import { AgentRegistry } from "../core/agent-registry"
 import { getSkillsDir, getRegistryPath, getConfigPath, expandPath } from "../utils/paths"
 
 export interface UnassignOptions {
@@ -30,26 +31,34 @@ export async function runUnassign(options: UnassignOptions): Promise<void> {
       continue
     }
 
+    if (agentPath === options.skillsDir) {
+      console.error(`Cannot unlink ${options.skill} from ${agentId}; remove the skill instead`)
+      continue
+    }
+
     await skillsStore.unassignSkill(options.skill, agentPath)
     delete skill.assignments[agentId]
-    console.log(`Unassigned ${options.skill} from ${agentId}`)
+    console.log(`Unlinked ${options.skill} from ${agentId}`)
   }
 
   await registryStore.save(registry)
 }
 
 export default defineCommand({
-  meta: { name: "unassign", description: "Remove a skill from agents" },
+  meta: { name: "unlink", description: "Unlink a skill from install locations" },
   args: {
     skill: { type: "positional", description: "Skill name", required: true },
-    agents: { type: "positional", description: "Agent IDs (comma-separated)", required: true },
+    agents: { type: "positional", description: "Install location IDs (comma-separated)", required: true },
   },
   async run({ args }) {
     const configStore = new ConfigStore(getConfigPath())
     const config = await configStore.load()
 
+    const agentRegistry = new AgentRegistry(config.agents)
+    const detected = await agentRegistry.detectAgents()
+
     const agentPaths: Record<string, string> = {}
-    for (const [id, agent] of Object.entries(config.agents)) {
+    for (const [id, agent] of Object.entries(detected)) {
       if (agent.detected) {
         agentPaths[id] = expandPath(agent.globalPath)
       }

@@ -4,8 +4,8 @@ import { join } from "node:path"
 import { homedir } from "node:os"
 
 describe("paths", () => {
-  test("getSkillsDir returns XDG-compliant path", () => {
-    const expected = join(homedir(), ".config", "simba", "skills")
+  test("getSkillsDir returns universal XDG skills path", () => {
+    const expected = join(homedir(), ".config", "agents", "skills")
     expect(getSkillsDir()).toBe(expected)
   })
 
