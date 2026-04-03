@@ -11,6 +11,11 @@ export class AgentRegistry {
     const results: Record<string, Agent> = {}
 
     for (const [id, agent] of Object.entries(this.agents)) {
+      if (agent.alwaysAvailable) {
+        results[id] = { ...agent, detected: true }
+        continue
+      }
+
       const configuredPaths = agent.detectPaths && agent.detectPaths.length > 0
         ? agent.detectPaths
         : [agent.detectPath ?? dirname(agent.globalPath)]

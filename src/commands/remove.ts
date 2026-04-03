@@ -8,7 +8,7 @@ import { ConfigStore } from "../core/config-store"
 import { AgentRegistry } from "../core/agent-registry"
 import { getSkillsDir, getRegistryPath, getConfigPath, expandPath } from "../utils/paths"
 
-export interface UninstallOptions {
+export interface RemoveOptions {
   skills: string[]
   skillsDir: string
   registryPath: string
@@ -16,7 +16,7 @@ export interface UninstallOptions {
   deleteFiles: boolean
 }
 
-export async function runUninstall(options: UninstallOptions): Promise<void> {
+export async function runRemove(options: RemoveOptions): Promise<void> {
   const skillsStore = new SkillsStore(options.skillsDir, options.registryPath)
   const registryStore = new RegistryStore(options.registryPath)
   const registry = await registryStore.load()
@@ -31,13 +31,15 @@ export async function runUninstall(options: UninstallOptions): Promise<void> {
     // Remove symlinks from all assigned agents
     for (const agentId of Object.keys(skill.assignments)) {
       const agentPath = options.agentPaths[agentId]
-      if (agentPath) {
-        try {
-          await rm(join(agentPath, name), { recursive: true, force: true })
-          console.log(`  Removed from ${agentId}`)
-        } catch {
-          // Ignore errors if symlink doesn't exist
-        }
+      if (!agentPath || agentPath === options.skillsDir) {
+        continue
+      }
+
+      try {
+        await rm(join(agentPath, name), { recursive: true, force: true })
+        console.log(`  Removed from ${agentId}`)
+      } catch {
+        // Ignore errors if symlink doesn't exist
       }
     }
 
@@ -50,17 +52,17 @@ export async function runUninstall(options: UninstallOptions): Promise<void> {
     // Remove from registry
     delete registry.skills[name]
 
-    console.log(`  Uninstalled: ${name}`)
+    console.log(`  Removed: ${name}`)
   }
 
   await registryStore.save(registry)
-  console.log("\nUninstall complete!")
+  console.log("\nDone!")
 }
 
 export default defineCommand({
-  meta: { name: "uninstall", description: "Remove a skill from Simba's store" },
+  meta: { name: "remove", description: "Remove a skill from Simba's store" },
   args: {
-    skill: { type: "positional", description: "Skill name to uninstall", required: false },
+    skill: { type: "positional", description: "Skill name to remove", required: false },
   },
   async run({ args }) {
     const registryStore = new RegistryStore(getRegistryPath())
@@ -92,7 +94,7 @@ export default defineCommand({
       }
 
       const result = await p.multiselect({
-        message: "Select skills to uninstall",
+        message: "Select skills to remove",
         options: managedSkills.map((s) => ({ value: s, label: s })),
         required: true,
       })
@@ -103,7 +105,7 @@ export default defineCommand({
 
     // Confirm
     const confirm = await p.confirm({
-      message: `Uninstall ${skills.length} skill(s)? This will remove them from all agents.`,
+      message: `Remove ${skills.length} skill(s)? This will remove them from all agents.`,
       initialValue: false,
     })
 
@@ -123,7 +125,7 @@ export default defineCommand({
       return
     }
 
-    await runUninstall({
+    await runRemove({
       skills,
       skillsDir: getSkillsDir(),
       registryPath: getRegistryPath(),

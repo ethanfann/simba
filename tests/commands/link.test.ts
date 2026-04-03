@@ -1,5 +1,5 @@
 import { test, expect, describe, beforeEach, afterEach } from "bun:test"
-import { mkdir, rm, writeFile, lstat } from "node:fs/promises"
+import { mkdir, rm, writeFile, lstat, readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 
@@ -40,7 +40,7 @@ describe("assign command", () => {
     }
     await writeFile(registryPath, JSON.stringify(registry))
 
-    const { runAssign } = await import("../../src/commands/assign")
+    const { runAssign } = await import("../../src/commands/link")
     await runAssign({
       skill: "my-skill",
       agents: ["claude"],
@@ -70,7 +70,7 @@ describe("assign command", () => {
     await writeFile(registryPath, JSON.stringify(registry))
 
     // Create symlink first
-    const { runAssign } = await import("../../src/commands/assign")
+    const { runAssign } = await import("../../src/commands/link")
     await runAssign({
       skill: "my-skill",
       agents: ["claude"],
@@ -79,7 +79,7 @@ describe("assign command", () => {
       agentPaths: { claude: claudeDir }
     })
 
-    const { runUnassign } = await import("../../src/commands/unassign")
+    const { runUnassign } = await import("../../src/commands/unlink")
     await runUnassign({
       skill: "my-skill",
       agents: ["claude"],
@@ -95,5 +95,66 @@ describe("assign command", () => {
       exists = false
     }
     expect(exists).toBe(false)
+  })
+
+  test("assigning to universal does not create a self-symlink", async () => {
+    await createSkill(skillsDir, "my-skill")
+
+    const registry = {
+      version: 1,
+      skills: {
+        "my-skill": {
+          name: "my-skill",
+          source: "installed:test",
+          installedAt: "2026-01-16T00:00:00Z",
+          assignments: {}
+        }
+      }
+    }
+    await writeFile(registryPath, JSON.stringify(registry))
+
+    const { runAssign } = await import("../../src/commands/link")
+    await runAssign({
+      skill: "my-skill",
+      agents: ["universal"],
+      skillsDir,
+      registryPath,
+      agentPaths: { universal: skillsDir }
+    })
+
+    const entries = await readdir(skillsDir)
+    expect(entries).toContain("my-skill")
+
+    const stat = await lstat(join(skillsDir, "my-skill"))
+    expect(stat.isDirectory()).toBe(true)
+  })
+
+  test("unlinking universal is rejected", async () => {
+    await createSkill(skillsDir, "my-skill")
+
+    const registry = {
+      version: 1,
+      skills: {
+        "my-skill": {
+          name: "my-skill",
+          source: "installed:test",
+          installedAt: "2026-01-16T00:00:00Z",
+          assignments: { universal: { type: "directory" } }
+        }
+      }
+    }
+    await writeFile(registryPath, JSON.stringify(registry))
+
+    const { runUnassign } = await import("../../src/commands/unlink")
+    await runUnassign({
+      skill: "my-skill",
+      agents: ["universal"],
+      skillsDir,
+      registryPath,
+      agentPaths: { universal: skillsDir }
+    })
+
+    const saved = JSON.parse(await readFile(registryPath, "utf-8"))
+    expect(saved.skills["my-skill"].assignments.universal).toEqual({ type: "directory" })
   })
 })

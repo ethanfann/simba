@@ -297,17 +297,17 @@ export async function discoverSkills(basePath: string): Promise<DiscoveredSkill[
   return skills
 }
 
-export interface InstallOptions {
+export interface AddOptions {
   source: string
   skillsDir: string
   registryPath: string
   useSSH: boolean
-  skillName?: string // Install specific skill by name, skip selection
-  installAll?: boolean // Install all discovered skills without prompts
+  skillName?: string // Add specific skill by name, skip selection
+  addAll?: boolean // Add all discovered skills without prompts
   onSelect: (skills: DiscoveredSkill[]) => Promise<string[]>
 }
 
-export async function runInstall(options: InstallOptions): Promise<void> {
+export async function runAdd(options: AddOptions): Promise<void> {
   const skillsStore = new SkillsStore(options.skillsDir, options.registryPath)
   const registryStore = new RegistryStore(options.registryPath)
   const registry = await registryStore.load()
@@ -371,11 +371,11 @@ export async function runInstall(options: InstallOptions): Promise<void> {
 
     let selected: string[]
 
-    if (options.installAll) {
+    if (options.addAll) {
       selected = discovered.map(s => s.name)
-      console.log(`Installing all ${selected.length} skills...`)
+      console.log(`Adding all ${selected.length} skills...`)
     } else if (options.skillName) {
-      // Direct install of specific skill
+      // Direct add of specific skill
       const skill = discovered.find(s => s.name === options.skillName)
       if (!skill) {
         console.log(`Skill "${options.skillName}" not found in source.`)
@@ -383,7 +383,7 @@ export async function runInstall(options: InstallOptions): Promise<void> {
         return
       }
       selected = [options.skillName]
-      console.log(`Installing skill: ${options.skillName}`)
+      console.log(`Adding skill: ${options.skillName}`)
     } else {
       console.log(`\nFound ${discovered.length} skills:`)
       for (const skill of discovered) {
@@ -430,7 +430,7 @@ export async function runInstall(options: InstallOptions): Promise<void> {
           renderDiff(comparison.diff, "current", "new")
         }
 
-        if (!options.installAll) {
+        if (!options.addAll) {
           const update = await p.confirm({
             message: `Update ${name}?`,
             initialValue: true,
@@ -453,6 +453,7 @@ export async function runInstall(options: InstallOptions): Promise<void> {
 
         registry.skills[name].source = `installed:${options.source}`
         registry.skills[name].installedAt = new Date().toISOString()
+        registry.skills[name].assignments.universal ??= { type: "directory" }
         if (sourceInfo) {
           registry.skills[name].installSource = {
             repo: sourceInfo.repo,
@@ -473,7 +474,7 @@ export async function runInstall(options: InstallOptions): Promise<void> {
           name,
           source: `installed:${options.source}`,
           installedAt: new Date().toISOString(),
-          assignments: {},
+          assignments: { universal: { type: "directory" } },
           installSource: sourceInfo ? {
             repo: sourceInfo.repo,
             protocol: sourceInfo.protocol,
@@ -482,12 +483,12 @@ export async function runInstall(options: InstallOptions): Promise<void> {
         }
         registry.skills[name] = managedSkill
 
-        console.log(`  Installed: ${name}`)
+        console.log(`  Added: ${name}`)
       }
     }
 
     await registryStore.save(registry)
-    console.log("\nInstallation complete!")
+    console.log("\nDone!")
   } finally {
     if (isTemp) {
       await rm(sourcePath, { recursive: true, force: true })
@@ -496,24 +497,24 @@ export async function runInstall(options: InstallOptions): Promise<void> {
 }
 
 export default defineCommand({
-  meta: { name: "install", description: "Install skills from GitHub or local path" },
+  meta: { name: "add", description: "Add skills from GitHub or local path" },
   args: {
     source: { type: "positional", description: "GitHub repo (user/repo) or local path", required: true },
     ssh: { type: "boolean", description: "Use SSH for GitHub repos (for private repos)", default: false },
-    skill: { type: "string", description: "Install specific skill by name (skip selection)", required: false },
-    all: { type: "boolean", description: "Install all skills without prompts", default: false },
+    skill: { type: "string", description: "Add specific skill by name (skip selection)", required: false },
+    all: { type: "boolean", description: "Add all skills without prompts", default: false },
   },
   async run({ args }) {
-    await runInstall({
+    await runAdd({
       source: args.source,
       skillsDir: getSkillsDir(),
       registryPath: getRegistryPath(),
       useSSH: args.ssh,
       skillName: args.skill,
-      installAll: args.all,
+      addAll: args.all,
       onSelect: async (skills) => {
         const result = await p.multiselect({
-          message: "Select skills to install:",
+          message: "Select skills to add:",
           options: skills.map(s => ({
             value: s.name,
             label: s.name,

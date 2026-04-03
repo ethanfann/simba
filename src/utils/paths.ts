@@ -22,7 +22,8 @@ export function getSnapshotsDir(): string {
 }
 
 export function getSkillsDir(): string {
-  return join(getConfigDir(), "skills")
+  const xdgConfig = process.env.XDG_CONFIG_HOME || join(homedir(), ".config")
+  return join(xdgConfig, "agents", "skills")
 }
 
 export function getRegistryPath(): string {

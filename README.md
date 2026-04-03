@@ -7,23 +7,23 @@
 [![npm version](https://img.shields.io/npm/v/simba-skills)](https://www.npmjs.com/package/simba-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-AI skills manager with a central store and symlink-based distribution across 17+ coding agents.
+AI skills manager with a central store and symlink-based distribution across universal XDG agents, Claude Code, and pi.
 
 ## Why Simba?
 
 Most skill installers are one-shot: they clone a repo and copy files. Simba is a **skill lifecycle manager**:
 
-- **Central store** → One source of truth at `~/.config/simba/skills/`
+- **Central store** → One source of truth at `~/.config/agents/skills/`
 - **Registry tracking** → Records install sources, enabling one-command updates
 - **Symlink distribution** → No file duplication; changes propagate instantly
-- **Multi-agent sync** → Keep Claude, Cursor, Copilot, and others in sync
+- **Multi-agent sync** → Keep universal XDG agents, Claude Code, and pi in sync
 - **Rollback support** → Automatic snapshots before destructive operations
 
 ## Installation
 
 ```bash
 # Requires Bun runtime
-bunx simba-skills detect
+bunx simba-skills init
 ```
 
 Or install globally:
@@ -35,23 +35,23 @@ bun install -g simba-skills
 ## Quick Start
 
 ```bash
-# Detect installed agents
-simba detect
+# Initialize: detect installed agents
+simba init
 
-# Adopt existing skills into the central store
-simba adopt
+# Scan agents and adopt existing skills into the central store
+simba scan
 
 # Install skills from GitHub
 simba install vercel-labs/agent-skills
 
-# Assign skills to specific agents
-simba assign my-skill claude,cursor
+# Link skills to specific install locations
+simba link my-skill universal,claude
 
 # Check for updates (uses tracked install sources)
 simba update
 
 # View skill matrix across all agents
-simba status
+simba list --matrix
 ```
 
 ## Key Features
@@ -74,17 +74,17 @@ simba update
 
 Simba records the source repository and path during installation, enabling `simba update` to fetch and compare changes with diffs.
 
-### Assign & Manage
+### Link & Manage
 
 ```bash
-# Assign skill to multiple agents
-simba assign my-skill claude,cursor,copilot
+# Link skill to multiple install locations
+simba link my-skill universal,claude,pi
 
 # Interactive TUI for bulk management
 simba manage
 
-# Remove skill from agents
-simba unassign my-skill claude
+# Remove skill from install locations
+simba unlink my-skill claude
 ```
 
 ### Health & Recovery
@@ -97,20 +97,22 @@ simba doctor
 simba doctor --fix
 
 # Backup all skills
-simba backup ./skills.tar.gz --includeConfig
+simba snapshot backup ./skills.tar.gz --includeConfig
 
 # Restore from backup
-simba restore ./skills.tar.gz
+simba snapshot restore ./skills.tar.gz
 
 # Undo last operation
-simba undo
+simba snapshot undo
 ```
 
-## Supported Agents
+## Supported Install Targets
 
-Supports Claude Code, Codex, OpenCode, Cursor, Gemini CLI, GitHub Copilot, Amp, Kimi Code CLI, Replit, and 30+ others.
+Supports three install targets:
 
-Includes agents using the `.agents/skills` universal standard, plus agent-specific paths.
+- `universal` → `~/.config/agents/skills` for XDG-compliant agents using `.agents/skills`
+- `claude` → `~/.claude/skills`
+- `pi` → `~/.pi/agent/skills`
 
 See full agent definitions and paths in [`src/core/config-store.ts`](./src/core/config-store.ts).
 
@@ -120,40 +122,42 @@ See full agent definitions and paths in [`src/core/config-store.ts`](./src/core/
 ~/.config/simba/
 ├── config.toml           # Settings
 ├── registry.json         # Skill metadata, sources & assignments
-├── skills/               # Central store
-│   └── my-skill/
-│       └── SKILL.md
 └── snapshots/            # Automatic rollback points
 
-~/.claude/skills/
-└── my-skill → ~/.config/simba/skills/my-skill  (symlink)
+~/.config/agents/skills/  # Canonical skill store
+└── my-skill/
+    └── SKILL.md
 
-~/.cursor/skills/
-└── my-skill → ~/.config/simba/skills/my-skill  (symlink)
+~/.claude/skills/
+└── my-skill → ~/.config/agents/skills/my-skill  (symlink)
+
+~/.pi/agent/skills/
+└── my-skill → ~/.config/agents/skills/my-skill  (symlink)
 ```
 
 ## All Commands
 
 | Command | Description |
 |---------|-------------|
-| `detect` | Scan for installed agents |
-| `adopt` | Move existing skills into central store |
+| `init` | Detect installed agents and scan skills |
+| `scan` | Scan agents and adopt skills into central store |
 | `install` | Install from GitHub or local path |
 | `uninstall` | Remove skill from store and agents |
 | `update` | Check and apply updates from sources |
 | `list` | List managed skills |
-| `status` | Skill matrix across agents |
-| `assign` | Symlink skill to agents |
-| `unassign` | Remove skill from agents |
+| `list --matrix` | Skill matrix across agents |
+| `link` | Link skill to install locations |
+| `unlink` | Remove skill from install locations |
 | `manage` | Interactive TUI |
 | `sync` | Union merge across agents |
 | `migrate` | Copy all skills from one agent to another |
 | `doctor` | Verify and repair symlinks |
-| `backup` | Export skills to archive |
-| `restore` | Restore from backup |
-| `snapshots` | List rollback points |
-| `undo` | Restore from last snapshot |
-| `import` | Copy global skill to project for customization |
+| `snapshot backup` | Export skills to archive |
+| `snapshot restore` | Restore from backup or snapshot |
+| `snapshot list` | List rollback points |
+| `snapshot undo` | Restore from last snapshot |
+| `copy` | Copy global skill to project for customization |
+| `bootstrap` | Restore all skills from registry on new machine |
 
 ## Configuration
 

@@ -55,6 +55,21 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorResults> 
       const expectedPath = join(agentSkillsDir, skillName)
       const expectedTarget = join(options.skillsDir, skillName)
 
+      if (expectedPath === expectedTarget) {
+        try {
+          await access(expectedPath)
+        } catch {
+          results.broken.push({
+            skill: skillName,
+            agent: agentId,
+            path: expectedPath,
+            reason: "missing from canonical store",
+          })
+          skillHealthy = false
+        }
+        continue
+      }
+
       const pathIsSymlink = await isSymlink(expectedPath)
 
       if (!pathIsSymlink) {
@@ -159,6 +174,11 @@ export default defineCommand({
       if (!agent) continue
 
       const expectedTarget = join(getSkillsDir(), broken.skill)
+      if (broken.path === expectedTarget) {
+        console.log(`Skipped: ${broken.skill} (${broken.agent}) - missing from canonical store`)
+        continue
+      }
+
       await removeSymlink(broken.path)
       await createSymlink(expectedTarget, broken.path)
       console.log(`Fixed: ${broken.skill} (${broken.agent})`)
