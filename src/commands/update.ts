@@ -9,7 +9,7 @@ import { RegistryStore } from "../core/registry-store"
 import { SkillsStore } from "../core/skills-store"
 import { getSkillsDir, getRegistryPath } from "../utils/paths"
 import { compareFiles, renderDiff } from "../utils/diff"
-import { discoverSkills } from "./install"
+import { discoverSkills } from "./add"
 import type { ManagedSkill, InstallSource } from "../core/types"
 import matter from "gray-matter"
 

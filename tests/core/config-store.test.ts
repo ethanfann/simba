@@ -21,7 +21,9 @@ describe("ConfigStore", () => {
     const store = new ConfigStore(configPath)
     const config = await store.load()
 
-    expect(config.agents.claude).toBeDefined()
+    expect(Object.keys(config.agents).sort()).toEqual(["claude", "pi", "universal"])
+    expect(config.agents.universal.globalPath).toBe("~/.config/agents/skills")
+    expect(config.agents.universal.alwaysAvailable).toBe(true)
     expect(config.agents.claude.globalPath).toBe("~/.claude/skills")
     expect(config.sync.strategy).toBe("union")
   })
@@ -39,45 +41,23 @@ describe("ConfigStore", () => {
     expect(loaded.agents.claude.detected).toBe(true)
   })
 
-  test("default agents have universal flag", async () => {
+  test("stores detectPath only for explicitly detected agents", async () => {
     const store = new ConfigStore(configPath)
     const config = await store.load()
 
-    expect(config.agents.amp.universal).toBe(true)
-    expect(config.agents.codex.universal).toBe(true)
-    expect(config.agents.copilot.universal).toBe(true)
-    expect(config.agents.gemini.universal).toBe(true)
-    expect(config.agents.opencode.universal).toBe(true)
-    expect(config.agents.kimi.universal).toBe(true)
-    expect(config.agents.replit.universal).toBe(true)
-
-    expect(config.agents.claude.universal).toBe(false)
-    expect(config.agents.cursor.universal).toBe(false)
-    expect(config.agents.openclaw.universal).toBe(false)
+    expect(config.agents.universal.detectPath).toBeUndefined()
+    expect(config.agents.claude.detectPath).toBe("~/.claude")
+    expect(config.agents.pi.detectPath).toBe("~/.pi/agent")
   })
 
-  test("universal agents have .agents/skills as projectPath", async () => {
-    const store = new ConfigStore(configPath)
-    const config = await store.load()
+  test("drops unsupported legacy agents from config", async () => {
+    const toml = `[agents.cursor]
+detected = true
 
-    for (const agent of Object.values(config.agents)) {
-      if (agent.universal) {
-        expect(agent.projectPath).toBe(".agents/skills")
-      }
-    }
-  })
+[agents.amp]
+detected = true
 
-  test("detectPath uses CLI-owned locations for universal agents", async () => {
-    const store = new ConfigStore(configPath)
-    const config = await store.load()
-
-    expect(config.agents.amp.detectPath).toBe("~/.config/amp")
-    expect(config.agents.kimi.detectPath).toBe("~/.kimi")
-    expect(config.agents.replit.detectPath).toBe(".replit")
-  })
-
-  test("migrates clawdbot to openclaw", async () => {
-    const toml = `[agents.clawdbot]
+[agents.claude]
 detected = true
 `
     await writeFile(configPath, toml)
@@ -85,29 +65,9 @@ detected = true
     const store = new ConfigStore(configPath)
     const config = await store.load()
 
-    // Old ID should not exist
-    expect(config.agents.clawdbot).toBeUndefined()
-
-    // New ID should exist with detection state carried over
-    expect(config.agents.openclaw).toBeDefined()
-    expect(config.agents.openclaw.detected).toBe(true)
-    expect(config.agents.openclaw.id).toBe("openclaw")
-  })
-
-  test("migration does not duplicate if new ID already present", async () => {
-    const toml = `[agents.clawdbot]
-detected = true
-
-[agents.openclaw]
-detected = false
-`
-    await writeFile(configPath, toml)
-
-    const store = new ConfigStore(configPath)
-    const config = await store.load()
-
-    expect(config.agents.clawdbot).toBeUndefined()
-    // openclaw's own data takes precedence
-    expect(config.agents.openclaw.detected).toBe(false)
+    expect(config.agents.cursor).toBeUndefined()
+    expect(config.agents.amp).toBeUndefined()
+    expect(config.agents.claude.detected).toBe(true)
+    expect(Object.keys(config.agents).sort()).toEqual(["claude", "pi", "universal"])
   })
 })

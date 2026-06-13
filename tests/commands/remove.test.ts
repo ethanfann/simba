@@ -3,7 +3,7 @@ import { mkdir, rm, writeFile, lstat, readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 
-const testDir = join(tmpdir(), "simba-uninstall-test-" + Date.now())
+const testDir = join(tmpdir(), "simba-remove-test-" + Date.now())
 const skillsDir = join(testDir, "skills")
 const registryPath = join(testDir, "registry.json")
 const claudeDir = join(testDir, "claude-skills")
@@ -32,7 +32,7 @@ async function createRegistry(skills: Record<string, { assignments: Record<strin
   await writeFile(registryPath, JSON.stringify(registry))
 }
 
-describe("uninstall command", () => {
+describe("remove command", () => {
   beforeEach(async () => {
     await mkdir(skillsDir, { recursive: true })
     await mkdir(claudeDir, { recursive: true })
@@ -42,12 +42,12 @@ describe("uninstall command", () => {
     await rm(testDir, { recursive: true, force: true })
   })
 
-  test("uninstalls skill and removes from registry", async () => {
+  test("removes skill and removes from registry", async () => {
     await createSkill(skillsDir, "my-skill")
     await createRegistry({ "my-skill": { assignments: {} } })
 
-    const { runUninstall } = await import("../../src/commands/uninstall")
-    await runUninstall({
+    const { runRemove } = await import("../../src/commands/remove")
+    await runRemove({
       skills: ["my-skill"],
       skillsDir,
       registryPath,
@@ -74,7 +74,7 @@ describe("uninstall command", () => {
     await createRegistry({ "my-skill": { assignments: { claude: { type: "directory" } } } })
 
     // Create symlink to simulate assigned skill
-    const { runAssign } = await import("../../src/commands/assign")
+    const { runAssign } = await import("../../src/commands/link")
     await runAssign({
       skill: "my-skill",
       agents: ["claude"],
@@ -83,8 +83,8 @@ describe("uninstall command", () => {
       agentPaths: { claude: claudeDir },
     })
 
-    const { runUninstall } = await import("../../src/commands/uninstall")
-    await runUninstall({
+    const { runRemove } = await import("../../src/commands/remove")
+    await runRemove({
       skills: ["my-skill"],
       skillsDir,
       registryPath,
@@ -106,8 +106,8 @@ describe("uninstall command", () => {
     await createSkill(skillsDir, "my-skill")
     await createRegistry({ "my-skill": { assignments: {} } })
 
-    const { runUninstall } = await import("../../src/commands/uninstall")
-    await runUninstall({
+    const { runRemove } = await import("../../src/commands/remove")
+    await runRemove({
       skills: ["my-skill"],
       skillsDir,
       registryPath,
@@ -127,9 +127,9 @@ describe("uninstall command", () => {
   test("handles non-existent skill gracefully", async () => {
     await createRegistry({})
 
-    const { runUninstall } = await import("../../src/commands/uninstall")
+    const { runRemove } = await import("../../src/commands/remove")
     // Should not throw
-    await runUninstall({
+    await runRemove({
       skills: ["non-existent"],
       skillsDir,
       registryPath,
@@ -141,7 +141,7 @@ describe("uninstall command", () => {
     expect(Object.keys(registry.skills)).toHaveLength(0)
   })
 
-  test("uninstalls multiple skills", async () => {
+  test("removes multiple skills", async () => {
     await createSkill(skillsDir, "skill-a")
     await createSkill(skillsDir, "skill-b")
     await createRegistry({
@@ -149,8 +149,8 @@ describe("uninstall command", () => {
       "skill-b": { assignments: {} },
     })
 
-    const { runUninstall } = await import("../../src/commands/uninstall")
-    await runUninstall({
+    const { runRemove } = await import("../../src/commands/remove")
+    await runRemove({
       skills: ["skill-a", "skill-b"],
       skillsDir,
       registryPath,
@@ -160,5 +160,22 @@ describe("uninstall command", () => {
 
     const registry = JSON.parse(await readFile(registryPath, "utf-8"))
     expect(Object.keys(registry.skills)).toHaveLength(0)
+  })
+
+  test("does not delete canonical store entries when removing universal assignment only", async () => {
+    await createSkill(skillsDir, "my-skill")
+    await createRegistry({ "my-skill": { assignments: { universal: { type: "directory" } } } })
+
+    const { runRemove } = await import("../../src/commands/remove")
+    await runRemove({
+      skills: ["my-skill"],
+      skillsDir,
+      registryPath,
+      agentPaths: { universal: skillsDir },
+      deleteFiles: false,
+    })
+
+    const stat = await lstat(join(skillsDir, "my-skill"))
+    expect(stat.isDirectory()).toBe(true)
   })
 })

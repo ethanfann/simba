@@ -56,6 +56,10 @@ export class SkillsStore {
     agentSkillsDir: string,
     assignment: SkillAssignment
   ): Promise<void> {
+    if (agentSkillsDir === this.skillsDir) {
+      return
+    }
+
     const sourcePath = join(this.skillsDir, name)
 
     if (assignment.type === "directory") {
@@ -69,6 +73,10 @@ export class SkillsStore {
   }
 
   async unassignSkill(name: string, agentSkillsDir: string): Promise<void> {
+    if (agentSkillsDir === this.skillsDir) {
+      return
+    }
+
     const targetPath = join(agentSkillsDir, name)
     await removeSymlink(targetPath)
   }

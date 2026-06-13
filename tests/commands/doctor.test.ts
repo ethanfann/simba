@@ -52,7 +52,7 @@ describe("doctor command", () => {
           shortName: "Claude",
           globalPath: claudeDir,
           projectPath: ".claude/skills",
-          universal: false,
+
           detected: true,
         }
       }
@@ -90,7 +90,7 @@ describe("doctor command", () => {
           shortName: "Claude",
           globalPath: claudeDir,
           projectPath: ".claude/skills",
-          universal: false,
+
           detected: true,
         }
       }
@@ -127,12 +127,50 @@ describe("doctor command", () => {
           shortName: "Claude",
           globalPath: claudeDir,
           projectPath: ".claude/skills",
-          universal: false,
+
           detected: true,
         }
       }
     })
 
     expect(results.rogue.some(r => r.skill === "my-skill")).toBe(true)
+  })
+
+  test("treats universal assignment as healthy when skill exists in canonical store", async () => {
+    await createSkill(skillsDir, "my-skill")
+
+    const registry = {
+      version: 1,
+      skills: {
+        "my-skill": {
+          name: "my-skill",
+          source: "installed:test",
+          installedAt: "2026-01-16T00:00:00Z",
+          assignments: { universal: { type: "directory" } }
+        }
+      }
+    }
+    await writeFile(registryPath, JSON.stringify(registry))
+
+    const { runDoctor } = await import("../../src/commands/doctor")
+    const results = await runDoctor({
+      skillsDir,
+      registryPath,
+      agents: {
+        universal: {
+          id: "universal",
+          name: "Universal (XDG)",
+          shortName: "Universal",
+          globalPath: skillsDir,
+          projectPath: ".agents/skills",
+          alwaysAvailable: true,
+          detected: true,
+        }
+      }
+    })
+
+    expect(results.healthy).toContain("my-skill")
+    expect(results.broken).toHaveLength(0)
+    expect(results.rogue).toHaveLength(0)
   })
 })

@@ -8,7 +8,7 @@ export interface Agent {
   projectPath: string
   detectPath?: string // CLI-owned config path used for installation detection
   detectPaths?: string[] // Multiple detection markers; detected when any path exists
-  universal: boolean // Uses .agents/skills as project path
+  alwaysAvailable?: boolean // Always show as an install/manage target even without detection
   detected: boolean
 }
 

@@ -5,8 +5,8 @@ import { getConfigPath } from "../utils/paths"
 
 export default defineCommand({
   meta: {
-    name: "detect",
-    description: "Scan for installed agents and skills",
+    name: "init",
+    description: "Initialize simba: detect installed agents and scan skills",
   },
   args: {
     refresh: {
@@ -51,18 +51,8 @@ export default defineCommand({
 
     await configStore.save(config)
 
-    // Output results grouped by universal/custom
-    const universal = Object.values(detected).filter(a => a.universal)
-    const custom = Object.values(detected).filter(a => !a.universal)
-
-    console.log("\nUniversal (.agents/skills):")
-    for (const agent of universal) {
-      const status = agent.detected ? "✓" : "─"
-      console.log(`  ${status} ${agent.name}`)
-    }
-
-    console.log("\nCustom:")
-    for (const agent of custom) {
+    console.log("\nAgents:")
+    for (const agent of Object.values(detected)) {
       const status = agent.detected ? "✓" : "─"
       console.log(`  ${status} ${agent.name}`)
     }
